@@ -7,13 +7,18 @@ from move_robot.srv import move_robot_service, move_robot_serviceResponse
 import math
 import copy
 
+#First msg receive flag
+first_msg_received = False
+
 #Make global variable for storing robot position
 robotPose = Pose() 
 
 # Collect data from /odom topic
 def odometryCallback(dataOdom): 
     global robotPose 
+    global first_msg_received
     robotPose = dataOdom.pose.pose
+    first_msg_received = True
 
 # Move robot when requested
 def move_robot_go(dataSrv):
@@ -74,5 +79,8 @@ if __name__ == '__main__':
     service = rospy.Service("move_robot_service",move_robot_service,move_robot_go)
     rospy.loginfo("Service is ready!")
 
-    
+    #Wait for te first msg
+    while not first_msg_received and not rospy.is_shutdown():
+        rospy.sleep(0.01)
+
     rospy.spin()
