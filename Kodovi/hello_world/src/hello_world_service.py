@@ -1,15 +1,48 @@
 #!/usr/bin/env python3
 
-import rospy
-from hello_world.srv import add_value_file, add_value_fileResponse              # Load service 
+from pathlib import Path
 
-def respons_callback(req):                              # Create respons callback function
-    f = open('value_file.txt', 'a+')                    # Open file "value_file.txt" in append mode at the end of file
-    f.write(str(req.value)+'\n')                        # Cast int64 in string type add newline character and write it in file
-    f.close()                                           # Close file
-    return add_value_fileResponse(True)                 # Send repsonse to caller
+import rclpy
+from rclpy.node import Node
 
-rospy.init_node('add_value_file_service')                                           # Init node
-srv = rospy.Service('add_value_file', add_value_file, respons_callback)             # Create service
-rospy.loginfo('Service is ready!!!')                                                # Tell user that the service is ready
-rospy.spin()                                                                        # Keep the code runing
+from hello_world.srv import AddValueFile
+
+
+class AddValueFileService(Node):
+    def __init__(self) -> None:
+        super().__init__("add_value_file_service")
+        self.output_dir = Path.home() / ".ros" / "hello_world"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.output_file = self.output_dir / "value_file.txt"
+        self.service = self.create_service(
+            AddValueFile,
+            "add_value_file",
+            self.response_callback,
+        )
+        self.get_logger().info(f"Service is ready. Writing values to {self.output_file}")
+
+    def response_callback(
+        self,
+        request: AddValueFile.Request,
+        response: AddValueFile.Response,
+    ) -> AddValueFile.Response:
+        with self.output_file.open("a", encoding="utf-8") as output_stream:
+            output_stream.write(f"{request.value}\n")
+        response.response = True
+        return response
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    node = AddValueFileService()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

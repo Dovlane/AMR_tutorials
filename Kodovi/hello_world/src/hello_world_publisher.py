@@ -1,20 +1,35 @@
 #!/usr/bin/env python3
 
-import rospy                                    # Import Python ros libraby
-from std_msgs.msg import String                 # Import String data type from standard msg
+from std_msgs.msg import String
 
-def talker():
-    rospy.init_node('hello_world_publisher',anonymous = False)          # Init Python node 
-    pub = rospy.Publisher('hello_topic', String, queue_size = 10)       # Define publisher
-    r = rospy.Rate(10)                                                  # Define rate for while loop in HZ
-    while not rospy.is_shutdown():
-        data = 'Hello world %s' %rospy.get_time()                       # Create data to be send
-        rospy.loginfo(data)                                             # Log data in node terminal
-        pub.publish(data)                                               # Send data to 'hello_topic'
-        r.sleep()                                                       # Sleep for define time
+import rclpy
+from rclpy.node import Node
 
-if __name__ == '__main__':
+
+class HelloWorldPublisher(Node):
+    def __init__(self) -> None:
+        super().__init__("hello_world_publisher")
+        self.publisher_ = self.create_publisher(String, "hello_topic", 10)
+        self.timer = self.create_timer(0.1, self.publish_message)
+
+    def publish_message(self) -> None:
+        data = String()
+        data.data = f"Hello world {self.get_clock().now().nanoseconds / 1e9:.3f}"
+        self.get_logger().info(data.data)
+        self.publisher_.publish(data)
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    node = HelloWorldPublisher()
     try:
-        talker()
-    except rospy.ROSInterruptException:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
         pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

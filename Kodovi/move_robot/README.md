@@ -1,38 +1,69 @@
-# Instalacija neophodnih paketa
+# `move_robot` u ROS 2 Humble
 
-Komanda za instalaciju ROS paketa:
-```
-  sudo apt-get install ros-noetic-joy ros-noetic-teleop-twist-joy \
-  ros-noetic-teleop-twist-keyboard ros-noetic-laser-proc \
-  ros-noetic-rgbd-launch ros-noetic-rosserial-arduino \
-  ros-noetic-rosserial-python ros-noetic-rosserial-client \
-  ros-noetic-rosserial-msgs ros-noetic-amcl ros-noetic-map-server \
-  ros-noetic-move-base ros-noetic-urdf ros-noetic-xacro \
-  ros-noetic-compressed-image-transport ros-noetic-rqt* ros-noetic-rviz \
-  ros-noetic-gmapping ros-noetic-navigation ros-noetic-interactive-markers
-```
+Paket izlaže servis `move_robot_service` koji pokreće robota dok ne pređe približno 1 metar na osnovu poruka sa teme `odom`.
 
-Komanda za instalaciju TurtleBot3 paketa:
-```
-sudo apt-get install ros-noetic-dynamixel-sdk
-sudo apt-get install ros-noetic-turtlebot3-msgs
-sudo apt-get install ros-noetic-turtlebot3
-sudo apt-get install ros-noetic-turtlebot3-simulations
+## ROS 2 zavisnosti
+
+Za TurtleBot3 simulaciju na ROS 2 Humble tipično su potrebni:
+
+```bash
+sudo apt update
+sudo apt install -y \
+  ros-humble-turtlebot3 \
+  ros-humble-turtlebot3-msgs \
+  ros-humble-turtlebot3-simulations
 ```
 
-# Pokretnje simulacije
-Da bi simulator znao kog robota treba da simulira potrebno je pokrenuti sledeću komandu:
-```
+Po potrebi podesiti model:
+
+```bash
 export TURTLEBOT3_MODEL=burger
 ```
-Sledećom komandom se pokreće Gazebo simulator:
-```
-roslaunch turtlebot3_gazebo turtlebot3_world.launch
+
+## Build
+
+Iz root direktorijuma repozitorijuma:
+
+```bash
+source /opt/ros/humble/setup.bash
+colcon build --base-paths Kodovi/move_robot
+source install/setup.bash
 ```
 
-U novom terminalu zatim se poziva program za kontrolu robota:
-```
-rosrun move_robot move_robot_node.py
-```
-***Napomena: neophodno je pre pokretanja kompajlovati paket***
+## Pokretanje simulacije
 
+U jednom terminalu pokrenuti Gazebo:
+
+```bash
+source /opt/ros/humble/setup.bash
+export TURTLEBOT3_MODEL=burger
+ros2 launch turtlebot3_gazebo empty_world.launch.py
+```
+
+Ako lokalna instalacija koristi drugi launch fajl, zameniti ga odgovarajućim fajlom iz instalirane verzije `turtlebot3_gazebo`.
+
+## Pokretanje noda
+
+U drugom terminalu:
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 run move_robot move_robot_node
+```
+
+## Provera interfejsa i poziv servisa
+
+Prikaz interfejsa:
+
+```bash
+ros2 interface show move_robot/srv/MoveRobotService
+```
+
+Poziv servisa:
+
+```bash
+ros2 service call /move_robot_service move_robot/srv/MoveRobotService "{x_speed: 0.2, angular_speed: 0.0}"
+```
+
+Servis vraća `move_done: true` kada prihvati zahtev. Robot zatim nastavlja kretanje dok ne pređe oko 1 metar, a zatim šalje nultu `Twist` poruku da bi se zaustavio.

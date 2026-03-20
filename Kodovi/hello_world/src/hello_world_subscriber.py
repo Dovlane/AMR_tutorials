@@ -1,15 +1,36 @@
 #!/usr/bin/env python3
 
-import rospy
 from std_msgs.msg import String
 
-def callback(data):
-        rospy.loginfo(rospy.get_caller_id() + ' I heard %s', data.data)         # Read data from the topic
+import rclpy
+from rclpy.node import Node
 
-def listener():
-    rospy.init_node('hello_world_subscriber', anonymous = False)                # Init node 
-    rospy.Subscriber('hello_topic', String, callback)                           # Define subscriber
-    rospy.spin()                                                                # Keep code runnings
 
-if __name__ == '__main__':
-    listener()
+class HelloWorldSubscriber(Node):
+    def __init__(self) -> None:
+        super().__init__("hello_world_subscriber")
+        self.subscription = self.create_subscription(
+            String,
+            "hello_topic",
+            self.callback,
+            10,
+        )
+
+    def callback(self, data: String) -> None:
+        self.get_logger().info(f"I heard {data.data}")
+
+
+def main(args=None) -> None:
+    rclpy.init(args=args)
+    node = HelloWorldSubscriber()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
