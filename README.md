@@ -8,6 +8,10 @@ Repo trenutno sadrži tri ROS 2 paketa:
 - `Kodovi/move_robot`
 - `Kodovi/line_fitting`
 
+## VM Setup
+
+Za kompletan vodič za podešavanje virtuelne mašine pogledati [VM_SETUP.md](VM_SETUP.md).
+
 ## Preduslovi
 
 - Ubuntu 22.04
