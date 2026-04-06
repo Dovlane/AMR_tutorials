@@ -24,6 +24,22 @@ colcon build --base-paths Kodovi/hello_world
 source install/setup.bash
 ```
 
+## Pokretanje svih nodova pomoću launch fajla
+
+Paket sadrži launch fajl koji pokreće sva tri noda odjednom:
+
+- publisher
+- subscriber
+- servis
+
+Pokretanje:
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+ros2 launch hello_world hello_world.launch.py
+```
+
 ## Pokretanje publisher/subscriber primera
 
 U prvom terminalu:
