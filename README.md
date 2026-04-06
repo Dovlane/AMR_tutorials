@@ -1,114 +1,96 @@
-# ROS 2 Humble Tutorials
+# ROS 2 Humble Tutorijali
 
-Ovaj branch (`ROS2`) prebacuje postojeće primere sa ROS 1 / Noetic na ROS 2 Humble uz zadržavanje iste organizacije paketa unutar direktorijuma `Kodovi/`.
+Ovaj repozitorijum pruža kratak pregled osnovnih funkcionalnosti ROS 2 sistema koje će studenti koristiti kasnije tokom izrade domaćih i projektnih zadataka na kursu.
 
-Repo trenutno sadrži tri ROS 2 paketa:
+Cilj repozitorijuma nije da bude kompletan kurs iz ROS 2 niti produkcioni robotski softverski sistem. Njegova svrha je da pruži sažet i praktičan uvod u glavne ROS 2 koncepte kroz male primere koji mogu lokalno da se build-uju i pokrenu.
+
+## O Čemu Je Ovaj Repozitorijum
+
+Primeri u ovom repozitorijumu namenjeni su da pomognu studentima da se upoznaju sa:
+
+- strukturom ROS 2 paketa
+- `colcon` build postupkom
+- Python ROS 2 nodovima zasnovanim na `rclpy`
+- komunikacijom preko topika
+- publisher i subscriber obrascima
+- definisanjem i pozivanjem servisa
+- jednostavnim upravljanjem robotom preko ROS 2 interfejsa
+- osnovnom obradom senzorskih podataka
+
+Ovi primeri treba da posluže kao početna osnova za kasniji rad na kursu, gde će studenti samostalno razvijati veće ROS 2 aplikacije.
+
+## Podešavanje Okruženja
+
+Nemoj koristiti ovaj `README` kao vodič za podešavanje razvojnog okruženja.
+
+Za pripremu virtuelne mašine, instalaciju Ubuntu sistema, instalaciju ROS 2 Humble verzije, potrebne zavisnosti i proveru instalacije, koristi [VM_SETUP.md](VM_SETUP.md).
+
+## Struktura Repozitorijuma
+
+Repozitorijum trenutno sadrži tri ROS 2 tutorijal paketa unutar direktorijuma `Kodovi/`:
 
 - `Kodovi/hello_world`
 - `Kodovi/move_robot`
 - `Kodovi/line_fitting`
 
-## VM Setup
-
-Za kompletan vodič za podešavanje virtuelne mašine pogledati [VM_SETUP.md](VM_SETUP.md).
-
-## Preduslovi
-
-- Ubuntu 22.04
-- ROS 2 Humble
-- Python 3
-- `colcon`
-
-Instalacija osnovnih alata:
-
-```bash
-sudo apt update
-sudo apt install -y \
-  python3-colcon-common-extensions \
-  python3-rosdep \
-  python3-vcstool
-```
-
-Ako ROS 2 Humble još nije instaliran, pratiti zvaničnu proceduru i zatim učitati okruženje:
-
-```bash
-source /opt/ros/humble/setup.bash
-```
-
-## Build repozitorijuma
-
-Pošto paketi ostaju u direktorijumu `Kodovi/`, build se pokreće iz root direktorijuma repozitorijuma:
-
-```bash
-source /opt/ros/humble/setup.bash
-colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/line_fitting
-```
-
-Posle uspešnog build-a:
-
-```bash
-source install/setup.bash
-```
-
-## ROS 2 radni tok
-
-U ROS 2 više nije potreban `roscore`. Čvorovi komuniciraju preko DDS middlewara čim je ROS 2 okruženje pravilno učitano.
-
-Najvažnije zamene u odnosu na ROS 1:
-
-- `catkin_make` -> `colcon build`
-- `rosrun` -> `ros2 run`
-- `rosservice call` -> `ros2 service call`
-- `rossrv show` -> `ros2 interface show`
-- `roslaunch` -> `ros2 launch`
-
 ## Paketi
 
 ### `hello_world`
 
-Primer publisher/subscriber komunikacije i jednostavnog servisa.
+Ovaj paket prikazuje najosnovnije obrasce komunikacije u ROS 2 sistemu:
 
-```bash
-ros2 run hello_world hello_world_publisher
-ros2 run hello_world hello_world_subscriber
-ros2 run hello_world hello_world_service
-```
+- publisher
+- subscriber
+- korisnički definisan servis
 
-Interfejs servisa:
-
-```bash
-ros2 interface show hello_world/srv/AddValueFile
-```
-
-Poziv servisa:
-
-```bash
-ros2 service call /add_value_file hello_world/srv/AddValueFile "{value: 115}"
-```
+Njegova namena je da bude prvi kontakt studenata sa ROS 2 nodovima, topicima i servisima.
 
 ### `move_robot`
 
-Servis koji prihvata linearu i ugaonu brzinu, objavljuje `cmd_vel`, prati `odom` i zaustavlja robota posle približno 1 metra.
+Ovaj paket prikazuje jednostavan primer upravljanja robotom pomoću servisa.
 
-```bash
-ros2 run move_robot move_robot_node
-ros2 interface show move_robot/srv/MoveRobotService
-ros2 service call /move_robot_service move_robot/srv/MoveRobotService "{x_speed: 0.2, angular_speed: 0.0}"
-```
+On pokazuje kako ROS 2 node može da:
 
-Za TurtleBot3 simulaciju pogledati README u paketu `move_robot`.
+- prima odometriju
+- objavljuje komande brzine
+- izloži korisnički definisan servis
+- koordinira kretanje na osnovu ulaza dobijenog kroz servis
+
+Ovaj paket predstavlja vezu između apstraktnih primera ROS 2 komunikacije i jednostavnijih robotskih aplikacija.
 
 ### `line_fitting`
 
-Pretplata na `LaserScan` temu `/kobuki/laser/scan` i računanje parametara prave na osnovu prvih 10 merenja.
+Ovaj paket prikazuje jednostavan primer obrade senzorskih podataka zasnovan na `LaserScan` porukama.
+
+On pokazuje kako ROS 2 node može da:
+
+- se pretplati na senzorske podatke
+- obradi numerička merenja
+- izračuna izvedene veličine
+- prikaže rezultate kroz logovanje noda
+
+Ovaj paket je namenjen kao lagan uvod u obradu podataka i percepcione zadatke u ROS 2 sistemu.
+
+## Build
+
+Nakon završetka koraka iz [VM_SETUP.md](VM_SETUP.md), repozitorijum se build-uje iz korenskog direktorijuma:
 
 ```bash
-ros2 run line_fitting line_fitting_node
+source /opt/ros/humble/setup.bash
+colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/line_fitting
+source install/setup.bash
 ```
 
-## Napomena o interfejsima
+## Zašto Su Ovi Primeri Važni
 
-ROS 2 zahteva CamelCase nazive fajlova za custom interfejse, pa su servis fajlovi preimenovani u:
+Repozitorijum je osmišljen tako da studentima omogući da brzo razumeju osnovni ROS 2 radni tok pre nego što pređu na zahtevnije zadatke na kursu.
 
-- `hello_world/srv/AddValueFile.srv`
-- `move_robot/srv/MoveRobotService.srv`
+Posebno, ovi primeri treba da pomognu studentima da se osećaju sigurnije u radu sa:
+
+- kreiranjem i pokretanjem nodova
+- ispitivanjem ROS 2 interfejsa
+- razumevanjem toka poruka i servisa
+- organizacijom paketa
+- povezivanjem softverske logike sa ponašanjem robota
+
+Kada ove osnove budu jasne, studenti će biti spremniji za rad na većim zadacima kasnije tokom kursa.
