@@ -15,7 +15,7 @@ class SenzorVlaznost(Node):
     def on_timer(self):
         msg = Float64()
         msg.data = uniform(30.0, 70.0)
-        self.get_logger().info('Vlaznost u kuci: "%.1f"%' % msg.data)
+        self.get_logger().info('Vlaznost u kuci: "%.1f" %%' % msg.data)
         self.publisher.publish(msg)
 
 
