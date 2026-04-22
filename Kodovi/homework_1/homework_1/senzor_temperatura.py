@@ -15,7 +15,7 @@ class SenzorTemperatura(Node):
     def on_timer(self):
         msg = Float64()
         msg.data = uniform(18.0, 30.0)
-        self.get_logger().info('Kucna temperatura: "%.1f"°C', msg.data)
+        self.get_logger().info('Kucna temperatura: "%.1f" C' % msg.data)
         self.publisher.publish(msg)
 
 
@@ -23,3 +23,5 @@ def main():
     rclpy.init()
     node = SenzorTemperatura()
     rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()

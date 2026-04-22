@@ -5,7 +5,7 @@ from std_msgs.msg import Float64, Int64
 class VizuelizacijaSistema(Node):
 
     def __init__(self):
-        super.__init__('vizuelizacija_sistema')
+        super().__init__('vizuelizacija_sistema')
         
         self.temperatura = None
         self.vlaznost = None
@@ -13,20 +13,20 @@ class VizuelizacijaSistema(Node):
 
         self.temperatura_sub = self.create_subscription(
             Float64, 
-            'kuca/temperatura', 
-            lambda msg: self.sensor_callback('kuca/temperatura', msg), 
+            '/kuca/temperatura', 
+            lambda msg: self.sensor_callback('/kuca/temperatura', msg), 
             10)
         
         self.vlaznost_sub = self.create_subscription(
             Float64, 
-            'kuca/vlaznost', 
-            lambda msg: self.sensor_callback('kuca/vlaznost', msg), 
+            '/kuca/vlaznost', 
+            lambda msg: self.sensor_callback('/kuca/vlaznost', msg), 
             10)
         
         self.osvetljenje_sub = self.create_subscription(
             Int64, 
-            'kuca/vlaznost', 
-            lambda msg: self.sensor_callback('kuca/osvetljenje', msg), 
+            '/kuca/osvetljenje', 
+            lambda msg: self.sensor_callback('/kuca/osvetljenje', msg), 
             10)
         
         self.timer = self.create_timer(1.0, self.on_timer)
@@ -53,4 +53,6 @@ class VizuelizacijaSistema(Node):
 def main():
     rclpy.init() 
     node = VizuelizacijaSistema() 
-    rclpy.spin(node) 
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
