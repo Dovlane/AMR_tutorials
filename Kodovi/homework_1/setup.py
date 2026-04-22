@@ -30,6 +30,8 @@ setup(
             'senzor_vlaznost = homework_1.senzor_vlaznost:main',
             'senzor_osvetljenje = homework_1.senzor_osvetljenje:main',
             'vizuelizacija_sistema = homework_1.vizuelizacija_sistema:main',
+            'brava = homework_1.brava:main',
+            'alarm = homework_1.alarm:main',
         ],
     },
 )

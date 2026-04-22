@@ -45,7 +45,7 @@ class VizuelizacijaSistema(Node):
             return
 
         self.get_logger().info(
-            '[Nadzorna tabla] Temperatura: %.1f | Vlaznost: %.1f | Osvetljenje: %d'
+            '[Nadzorna tabla] Temperatura: %.1f | Vlaznost: %.1f | Osvetljenje: %d \n'
             % (self.temperatura, self.vlaznost, self.osvetljenje)
         )
 

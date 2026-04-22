@@ -29,4 +29,16 @@ def generate_launch_description() :
                name='vizuelizacija_sistema', 
                output='screen', 
         ),
+        Node(
+               package='homework_1',
+               executable='brava',
+               name='brava',
+               output='screen',
+        ),
+        Node(
+               package='homework_1',
+               executable='alarm',
+               name='alarm',
+               output='screen',
+        ),
     ])
