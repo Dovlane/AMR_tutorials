@@ -15,7 +15,7 @@ class SenzorOsvetljenje(Node):
     def on_timer(self):
         msg = Int64()
         msg.data = randint(0, 1000)
-        self.get_logger().info('Osvetljenje u kuci: "%d" lx' % msg.data)
+        self.get_logger().info('Osvetljenje u kuci: "%d"lx' % msg.data)
         self.publisher.publish(msg)
 
 
