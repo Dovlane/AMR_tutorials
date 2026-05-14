@@ -1,0 +1,25 @@
+uint8 MODE_MANUAL=1
+uint8 MODE_AUTO=2
+uint8 MODE_STOP=3
+
+uint8 MANUAL_FORWARD=1
+uint8 MANUAL_BACKWARD=2
+uint8 MANUAL_LEFT=3
+uint8 MANUAL_RIGHT=4
+uint8 MANUAL_STOP=5
+
+uint8 CONTROLLER_BASIC=1
+uint8 CONTROLLER_REVERSE=2
+uint8 CONTROLLER_CONSTANT_SPEED=3
+
+uint8 mode
+uint8 manual_command
+uint8 controller_type
+
+float64 goal_x
+float64 goal_y
+float64 linear_speed
+float64 angular_speed
+---
+bool success
+string message
