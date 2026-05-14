@@ -60,7 +60,6 @@ def clamp_abs(value: float, limit: float) -> float:
 
 
 def compute_polar_errors(robot_yaw: float, dx: float, dy: float) -> tuple[float, float]:
-    """Return alpha and beta from the polar controller in AMR chapter 3.6."""
     heading_to_goal = math.atan2(dy, dx)
     alpha = normalize_angle(heading_to_goal - robot_yaw)
     beta = normalize_angle(-robot_yaw - alpha)
@@ -302,9 +301,6 @@ class Homework2Controller(Node):
         linear_velocity = direction * self.k_rho * rho
         angular_velocity = self.k_alpha * alpha + self.k_beta * beta
 
-        linear_velocity = clamp_abs(linear_velocity, goal.linear_speed)
-        angular_velocity = clamp_abs(angular_velocity, goal.angular_speed)
-
         if goal.controller_type == CONTROLLER_CONSTANT_SPEED:
             linear_velocity, angular_velocity = self.scale_to_constant_speed(
                 linear_velocity,
@@ -327,7 +323,7 @@ class Homework2Controller(Node):
             return linear_velocity, angular_velocity
 
         scale = target_speed / abs(linear_velocity)
-        return linear_velocity * scale, angular_velocity * scale
+        return math.copysign(target_speed, linear_velocity), angular_velocity * scale
 
     def stop_robot(self) -> None:
         self.mode = MODE_STOP
