@@ -79,7 +79,7 @@ class Homework2Controller(Node):
         self.max_linear_speed = 0.22
         self.max_angular_speed = 2.0
         self.manual_timeout = 0.6
-        self.control_period = 0.05
+        self.control_period = 0.01
 
         self.pose = RobotPose()
         self.has_odometry = False
