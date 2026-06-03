@@ -1,20 +1,23 @@
-# Domaci 3 - Iterative Split-and-Merge Line Fitting
+# Domaci 3 - Iterative Split-and-Merge
 
-ROS 2 Humble package for extracting straight-line segments from TurtleBot3
-`LaserScan` data in the maze simulation.
+This package solves the line fitting task from `assignments/Domaci 3.docx`.
+The assignment asks for a Split-and-Merge algorithm on TurtleBot3 laser scan
+data, terminal output of line parameters, and RViz visualization through
+`visualization_msgs/MarkerArray`.
 
-The node:
+This solution uses the iterative Split-and-Merge algorithm.
 
-- subscribes to `/scan`,
-- converts valid laser ranges to 2D points,
-- runs the iterative Split-and-Merge algorithm,
-- prints line parameters `rho` and `alpha` in the terminal,
-- prints algorithm execution time,
-- publishes detected line segments as `visualization_msgs/MarkerArray` on `/line_markers`.
+## What It Does
 
-## Files
+- Subscribes to TurtleBot3 `LaserScan` data on `/scan`.
+- Converts valid scan ranges into 2D points.
+- Splits and merges scan segments into straight lines.
+- Prints each line as distance and angle:
+  `rho` is distance in meters, `alpha` is angle in radians.
+- Prints execution time for the iterative algorithm.
+- Publishes detected lines as green RViz markers on `/line_markers`.
 
-Main implementation files:
+## Important Files
 
 ```text
 Kodovi/line_fitting/line_fitting/split_and_merge.py
@@ -30,104 +33,57 @@ Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
 Kodovi/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120
 ```
 
-## Build
+## 1. Build The Line Fitting Package
 
-Run from the workspace root:
+Open a terminal:
 
 ```bash
-cd ~/workspace/AMR_tutorials
+cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
 colcon build --base-paths Kodovi/line_fitting
 source install/setup.bash
 ```
 
-## Prepare TurtleBot3 Maze
+You only need to rebuild after changing Python/package files.
 
-Copy the provided maze files into the `turtlebot3_gazebo` package used by your
-ROS 2 workspace.
+## 2. Start The TurtleBot3 Maze Simulation
 
-If you have a source workspace:
-
-```bash
-cp Kodovi/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world \
-  ~/ros2_ws/src/turtlebot3_simulations/turtlebot3_gazebo/worlds/
-
-cp Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py \
-  ~/ros2_ws/src/turtlebot3_simulations/turtlebot3_gazebo/launch/
-
-cp -r Kodovi/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120 \
-  ~/ros2_ws/src/turtlebot3_simulations/turtlebot3_gazebo/models/
-```
-
-Then rebuild that workspace if needed:
+Open a second terminal:
 
 ```bash
-cd ~/ros2_ws
-colcon build
-source install/setup.bash
-```
-
-## Run Simulation
-
-Terminal 1:
-
-```bash
+cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
-source ~/ros2_ws/install/setup.bash
 export TURTLEBOT3_MODEL=burger
-ros2 launch turtlebot3_gazebo turtlebot3_maze.launch.py
+ros2 launch Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
 ```
 
-Terminal 2:
+This launches the local maze file from this repository. You do not need to copy
+`maze.world` into `/opt/ros` or another workspace for this command.
+
+After Gazebo starts, check that laser data exists:
 
 ```bash
+ros2 topic list | grep scan
+```
+
+Expected topic:
+
+```text
+/scan
+```
+
+## 3. Start The Line Fitting Node
+
+Open a third terminal:
+
+```bash
+cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
-source ~/workspace/AMR_tutorials/install/setup.bash
+source install/setup.bash
 ros2 launch line_fitting line_fitting.launch.py
 ```
 
-## RViz Visualization
-
-Start RViz:
-
-```bash
-rviz2
-```
-
-In RViz:
-
-1. Set `Fixed Frame` to the laser scan frame, usually `base_scan`.
-2. Add a display of type `LaserScan` and select `/scan`.
-3. Add a display of type `MarkerArray` and select `/line_markers`.
-
-The green marker lines represent the detected Split-and-Merge line segments.
-
-## Parameters
-
-The launch file supports these parameters:
-
-```bash
-ros2 launch line_fitting line_fitting.launch.py split_threshold:=0.03
-ros2 launch line_fitting line_fitting.launch.py merge_threshold:=0.03
-ros2 launch line_fitting line_fitting.launch.py min_points:=8
-ros2 launch line_fitting line_fitting.launch.py max_point_gap:=0.20
-ros2 launch line_fitting line_fitting.launch.py scan_topic:=/kobuki/laser/scan
-```
-
-Default values:
-
-```text
-scan_topic       /scan
-marker_topic     /line_markers
-split_threshold  0.04 m
-merge_threshold  0.04 m
-min_points       6
-max_point_gap    0.25 m
-```
-
-## Expected Output
-
-When scan data is received, the terminal prints output similar to:
+When `/scan` messages arrive, the terminal should print something like:
 
 ```text
 Iterative Split-and-Merge: 4 lines, 1.240 ms
@@ -136,5 +92,107 @@ Line parameters:
 02: rho=1.514 m, alpha=0.002 rad (0.1 deg), points=42, max_error=0.021 m
 ```
 
-Here `rho` is the perpendicular distance from the robot frame origin to the
-line, and `alpha` is the line normal angle in radians.
+## 4. Visualize Lines In RViz
+
+Open a fourth terminal:
+
+```bash
+source /opt/ros/humble/setup.bash
+rviz2
+```
+
+In RViz:
+
+1. Set `Fixed Frame` to `base_scan`.
+2. Add display type `LaserScan`, then set topic to `/scan`.
+3. Add display type `MarkerArray`, then set topic to `/line_markers`.
+
+The detected Split-and-Merge lines are shown as green line markers.
+
+If `base_scan` does not work, check the scan frame:
+
+```bash
+ros2 topic echo /scan --once | grep frame_id
+```
+
+Then use that frame as the RViz `Fixed Frame`.
+
+## Useful Parameters
+
+The default launch parameters are:
+
+```text
+scan_topic       /scan
+marker_topic     /line_markers
+split_threshold  0.04
+merge_threshold  0.04
+min_points       6
+max_point_gap    0.25
+```
+
+Examples:
+
+```bash
+ros2 launch line_fitting line_fitting.launch.py split_threshold:=0.03 merge_threshold:=0.03
+ros2 launch line_fitting line_fitting.launch.py min_points:=8
+ros2 launch line_fitting line_fitting.launch.py max_point_gap:=0.20
+```
+
+If your laser topic is not `/scan`, pass the topic explicitly:
+
+```bash
+ros2 launch line_fitting line_fitting.launch.py scan_topic:=/kobuki/laser/scan
+```
+
+## Assignment-Style Launch Command
+
+The assignment document shows this command:
+
+```bash
+ros2 launch turtlebot3_gazebo turtlebot3_maze.launch.py
+```
+
+That command only works if `turtlebot3_maze.launch.py`, `maze.world`, and the
+maze wall model are installed inside a `turtlebot3_gazebo` package in a sourced
+ROS 2 workspace.
+
+If you specifically want that command, copy the files into your TurtleBot3
+source workspace:
+
+```bash
+TB3_GAZEBO=/home/ros2_ws/src/turtlebot3_simulations/turtlebot3_gazebo
+
+cp /home/vladimir/workspace/AMR_tutorials/Kodovi/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world \
+  "$TB3_GAZEBO/worlds/"
+
+cp /home/vladimir/workspace/AMR_tutorials/Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py \
+  "$TB3_GAZEBO/launch/"
+
+cp -r /home/vladimir/workspace/AMR_tutorials/Kodovi/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120 \
+  "$TB3_GAZEBO/models/"
+```
+
+Then source that workspace and run the assignment command. For this repository,
+the direct local launch command in step 2 is simpler.
+
+## Troubleshooting
+
+If `line_fitting` is not found:
+
+```bash
+cd /home/vladimir/workspace/AMR_tutorials
+source install/setup.bash
+ros2 pkg executables line_fitting
+```
+
+If no lines are printed, confirm that `/scan` is publishing:
+
+```bash
+ros2 topic hz /scan
+```
+
+If RViz shows no markers, confirm that `/line_markers` is publishing:
+
+```bash
+ros2 topic echo /line_markers --once
+```
