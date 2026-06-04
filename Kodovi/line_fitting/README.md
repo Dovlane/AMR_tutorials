@@ -98,24 +98,76 @@ Open a fourth terminal:
 
 ```bash
 source /opt/ros/humble/setup.bash
-rviz2
+rviz2 -d /home/vladimir/workspace/AMR_tutorials/Kodovi/line_fitting/rviz/line_fitting.rviz
 ```
 
-In RViz:
+This opens RViz with `base_scan`, `RobotModel`, `/scan`, and `/line_markers`
+already configured.
 
-1. Set `Fixed Frame` to `base_scan`.
-2. Add display type `LaserScan`, then set topic to `/scan`.
-3. Add display type `MarkerArray`, then set topic to `/line_markers`.
+If RViz fails with a `/snap/core20/...libpthread...` error, start it with the
+Snap environment variables removed:
+
+```bash
+source /opt/ros/humble/setup.bash
+env -u SNAP -u SNAP_NAME -u SNAP_ARCH -u SNAP_INSTANCE_NAME \
+  -u SNAP_REVISION -u SNAP_VERSION -u SNAP_COMMON -u SNAP_CONTEXT \
+  -u SNAP_COOKIE -u SNAP_DATA -u SNAP_EUID -u SNAP_LIBRARY_PATH \
+  -u SNAP_REAL_HOME -u SNAP_UID -u SNAP_USER_COMMON -u SNAP_USER_DATA \
+  -u GTK_EXE_PREFIX -u GTK_IM_MODULE_FILE -u GTK_PATH \
+  rviz2 -d /home/vladimir/workspace/AMR_tutorials/Kodovi/line_fitting/rviz/line_fitting.rviz
+```
+
+To configure RViz manually instead:
+
+1. In the left `Displays` panel, open `Global Options`.
+2. Click the `Fixed Frame` value. It is usually `map` by default.
+3. Replace it with `base_scan` and press Enter.
+4. Click `Add`, choose display type `RobotModel`, and click `OK`.
+5. In the `RobotModel` display, set `Description Topic` to `/robot_description`
+   if it is not already selected.
+6. Click `Add`, choose display type `LaserScan`, and set topic to `/scan`.
+7. Click `Add`, choose display type `MarkerArray`, and set topic to
+   `/line_markers`.
 
 The detected Split-and-Merge lines are shown as green line markers.
 
-If `base_scan` does not work, check the scan frame:
+RViz does not automatically show the TurtleBot3 just because Gazebo is running.
+The robot appears only after the `RobotModel` display is added and RViz can see
+the `/robot_description` and `/tf` topics from the simulation.
+
+If `base_scan` is red or does not work, check the scan frame:
 
 ```bash
 ros2 topic echo /scan --once | grep frame_id
 ```
 
 Then use that frame as the RViz `Fixed Frame`.
+
+If the robot model still does not appear, check that these topics exist:
+
+```bash
+ros2 topic list | grep -E '(/tf|/robot_description|/scan)'
+```
+
+You should see at least:
+
+```text
+/tf
+/tf_static
+/robot_description
+/scan
+```
+
+If `/robot_description` or `/tf` is missing, the TurtleBot3 Gazebo launch is not
+publishing the robot model. Stop the simulation terminal, start it again, and
+check that it has no errors:
+
+```bash
+cd /home/vladimir/workspace/AMR_tutorials
+source /opt/ros/humble/setup.bash
+export TURTLEBOT3_MODEL=burger
+ros2 launch Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
+```
 
 ## Useful Parameters
 
