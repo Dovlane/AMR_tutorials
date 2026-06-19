@@ -20,17 +20,17 @@ This solution uses the iterative Split-and-Merge algorithm.
 ## Important Files
 
 ```text
-Kodovi/line_fitting/line_fitting/split_and_merge.py
-Kodovi/line_fitting/line_fitting/line_fitting_node.py
-Kodovi/line_fitting/launch/line_fitting.launch.py
+Kodovi/homework_3/line_fitting/line_fitting/split_and_merge.py
+Kodovi/homework_3/line_fitting/line_fitting/line_fitting_node.py
+Kodovi/homework_3/line_fitting/launch/line_fitting.launch.py
 ```
 
 Maze simulation files:
 
 ```text
-Kodovi/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world
-Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
-Kodovi/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120
+Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world
+Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
+Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120
 ```
 
 ## 1. Build The Line Fitting Package
@@ -40,7 +40,7 @@ Open a terminal:
 ```bash
 cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
-colcon build --base-paths Kodovi/line_fitting
+colcon build --base-paths Kodovi/homework_3/line_fitting
 source install/setup.bash
 ```
 
@@ -54,7 +54,7 @@ Open a second terminal:
 cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
 export TURTLEBOT3_MODEL=burger
-ros2 launch Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
+ros2 launch Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
 ```
 
 This launches the local maze file from this repository. You do not need to copy
@@ -98,7 +98,7 @@ Open a fourth terminal:
 
 ```bash
 source /opt/ros/humble/setup.bash
-rviz2 -d /home/vladimir/workspace/AMR_tutorials/Kodovi/line_fitting/rviz/line_fitting.rviz
+rviz2 -d /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_3/line_fitting/rviz/line_fitting.rviz
 ```
 
 This opens RViz with `base_scan`, `RobotModel`, `/scan`, and `/line_markers`
@@ -114,7 +114,7 @@ env -u SNAP -u SNAP_NAME -u SNAP_ARCH -u SNAP_INSTANCE_NAME \
   -u SNAP_COOKIE -u SNAP_DATA -u SNAP_EUID -u SNAP_LIBRARY_PATH \
   -u SNAP_REAL_HOME -u SNAP_UID -u SNAP_USER_COMMON -u SNAP_USER_DATA \
   -u GTK_EXE_PREFIX -u GTK_IM_MODULE_FILE -u GTK_PATH \
-  rviz2 -d /home/vladimir/workspace/AMR_tutorials/Kodovi/line_fitting/rviz/line_fitting.rviz
+  rviz2 -d /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_3/line_fitting/rviz/line_fitting.rviz
 ```
 
 To configure RViz manually instead:
@@ -166,7 +166,7 @@ check that it has no errors:
 cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
 export TURTLEBOT3_MODEL=burger
-ros2 launch Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
+ros2 launch Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py
 ```
 
 ## Useful Parameters
@@ -214,13 +214,13 @@ source workspace:
 ```bash
 TB3_GAZEBO=/home/ros2_ws/src/turtlebot3_simulations/turtlebot3_gazebo
 
-cp /home/vladimir/workspace/AMR_tutorials/Kodovi/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world \
+cp /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world \
   "$TB3_GAZEBO/worlds/"
 
-cp /home/vladimir/workspace/AMR_tutorials/Kodovi/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py \
+cp /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/launch/turtlebot3_maze.launch.py \
   "$TB3_GAZEBO/launch/"
 
-cp -r /home/vladimir/workspace/AMR_tutorials/Kodovi/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120 \
+cp -r /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/models/nist_maze_wall_120 \
   "$TB3_GAZEBO/models/"
 ```
 

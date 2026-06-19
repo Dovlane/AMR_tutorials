@@ -145,7 +145,7 @@ Iz root direktorijuma repozitorijuma:
 
 ```bash
 source /opt/ros/humble/setup.bash
-colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/line_fitting
+colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/homework_3/line_fitting
 ```
 
 Posle uspešnog build-a:
@@ -238,7 +238,7 @@ Ako build posle izmena krene da puca:
 cd ~/workspace/AMR_tutorials
 rm -rf build install log
 source /opt/ros/humble/setup.bash
-colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/line_fitting
+colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/homework_3/line_fitting
 ```
 
 ## 10. Pokretanje ovog repozitorijuma
