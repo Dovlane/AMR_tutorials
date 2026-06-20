@@ -1,0 +1,21 @@
+map:
+  name: turtlebot3_maze_hw3
+  origin: [0.0, 0.0, 0.0]  # [x, y, theta]
+  units: {angle: radians, distance: meters}
+
+# id: [alpha_rad, r_m]
+# Walls were captured from Homework 3 Split-and-Merge at the initial pose.
+walls:
+  1:  [0.0020, 3.1750]
+  2:  [1.5530, 0.8220]
+  3:  [0.0040, 1.9980]
+  4:  [1.5710, 1.9870]
+  5:  [1.5620, 2.6860]
+  6:  [3.1280, 1.3530]
+  7:  [1.5720, 1.5400]
+  8:  [1.8110, 2.0450]
+  9:  [3.1310, 2.5400]
+  10: [4.7032, 0.8180]
+  11: [3.1462, 1.3900]
+  12: [4.7172, 1.9910]
+  13: [6.2772, 3.1800]

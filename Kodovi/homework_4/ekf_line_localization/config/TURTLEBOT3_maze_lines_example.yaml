@@ -1,0 +1,18 @@
+map:
+ name: nist_maze
+ origin: [0.0, 0.0, 0.0]  # [x, y, theta (orientation)]
+ units: {angle: radians, distance: meters}
+# id: [alpha_rad, r_m]
+walls:
+ 1:  [4.7124, 2.5920]  # bottom outer
+ 2:  [4.7124, 1.4070]  # inner bottom stub
+ 3:  [1.5708, 2.1012]  # top outer piece
+ 4:  [1.5708, 1.3961]  # upper-mid horizontal
+ 5:  [1.5708, 0.9452]  # inner upper horizontal
+ 6:  [1.5708, 0.1875]  # near-origin above
+ 7:  [4.7124, 0.1508]  # near-origin below
+ 8:  [0.0000, 2.5828]  # right outer
+ 9:  [0.0000, 1.3979]  # inner right stub
+ 10: [3.1416, 3.1406]  # left outer
+ 11: [3.1416, 1.9603]  # inner left vertical
+ 12: [3.1416, 0.9654]  # inner-left stub

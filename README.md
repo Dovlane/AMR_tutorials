@@ -27,11 +27,12 @@ Za pripremu virtuelne mašine, instalaciju Ubuntu sistema, instalaciju ROS 2 Hum
 
 ## Struktura Repozitorijuma
 
-Repozitorijum trenutno sadrži tri ROS 2 tutorijal paketa unutar direktorijuma `Kodovi/`:
+Repozitorijum trenutno sadrži više ROS 2 tutorijal paketa unutar direktorijuma `Kodovi/`:
 
 - `Kodovi/hello_world`
 - `Kodovi/move_robot`
 - `Kodovi/homework_3/line_fitting`
+- `Kodovi/homework_4/ekf_line_localization`
 
 ## Paketi
 
@@ -78,6 +79,14 @@ Nakon završetka koraka iz [VM_SETUP.md](VM_SETUP.md), repozitorijum se build-uj
 ```bash
 source /opt/ros/humble/setup.bash
 colcon build --base-paths Kodovi/hello_world Kodovi/move_robot Kodovi/homework_3/line_fitting
+source install/setup.bash
+```
+
+Za četvrti domaći, build-uj i paket za linijsku EKF lokalizaciju:
+
+```bash
+source /opt/ros/humble/setup.bash
+colcon build --base-paths Kodovi/homework_3/line_fitting Kodovi/homework_4/ekf_line_localization
 source install/setup.bash
 ```
 

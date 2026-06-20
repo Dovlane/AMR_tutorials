@@ -1,0 +1,24 @@
+# Infinite line features for the local turtlebot3 maze world.
+# Each line is [alpha, r], where x*cos(alpha) + y*sin(alpha) = r in map.
+# Values were derived from the wall instances in:
+# Kodovi/homework_3/turtlebot3_simulations/turtlebot3_gazebo/worlds/maze.world
+lines:
+  - [-1.570796, 1.980730]
+  - [-1.570796, 1.976400]
+  - [-1.570796, 1.997680]
+  - [1.570796, 1.997420]
+  - [1.570796, 1.994800]
+  - [0.003434, 2.004792]
+  - [1.570796, 0.787460]
+  - [-0.003434, 3.178334]
+  - [-0.003434, 3.183526]
+  - [-1.570796, 1.989430]
+  - [-0.003434, 3.193789]
+  - [3.138159, 1.385112]
+  - [-1.570796, 0.806970]
+  - [3.138159, 2.545005]
+  - [3.138159, 2.538533]
+  - [1.570796, 1.545244]
+  - [3.138159, 1.337983]
+  - [1.570796, 2.701230]
+  - [3.138159, 0.374359]
