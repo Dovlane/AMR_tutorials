@@ -161,8 +161,8 @@ def measurement_function(
     normal_x = math.cos(map_alpha)
     normal_y = math.sin(map_alpha)
 
-    raw_alpha = normalize_angle(map_alpha - pose_vector[2])
-    raw_radius = map_radius - pose_vector[0] * normal_x - pose_vector[1] * normal_y
+    robot_alpha = normalize_angle(map_alpha - pose_vector[2])
+    robot_radius = map_radius - pose_vector[0] * normal_x - pose_vector[1] * normal_y
 
     hx = numpy.array(
         [
@@ -172,11 +172,7 @@ def measurement_function(
         dtype=float,
     )
 
-    alpha, radius = normalize_line(raw_alpha, raw_radius)
-    if raw_radius < 0.0:
-        hx[1, :] *= -1.0
-
-    return numpy.array([alpha, radius], dtype=float), hx
+    return numpy.array([robot_alpha, robot_radius], dtype=float), hx
 
 
 def load_line_map(map_file: str | Path) -> LineArray:
