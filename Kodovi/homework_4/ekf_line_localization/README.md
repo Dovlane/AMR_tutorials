@@ -23,14 +23,14 @@ config/waypoints.yaml
 launch/homework_4.launch.py
 ```
 
-The assignment-style functions from tasks 1-4 are available in
-`ekf_line_localization/ekf.py` as:
+The EKF functions from tasks 1-4 are available in
+`ekf_line_localization/ekf.py` as Python-style functions:
 
 ```text
-transitionFunction(...)
-measurementFunction(...)
-associateMeasurements(...)
-filterStep(...)
+transition_function(...)
+measurement_function(...)
+associate_measurements(...)
+filter_step(...)
 ```
 
 ## Build
