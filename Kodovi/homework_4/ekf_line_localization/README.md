@@ -44,7 +44,10 @@ From the workspace root:
 ```bash
 cd /home/vladimir/workspace/AMR_tutorials
 source /opt/ros/humble/setup.bash
-colcon build --base-paths Kodovi/homework_3/line_fitting Kodovi/homework_4/ekf_line_localization
+colcon build --base-paths \
+  Kodovi/homework_2 \
+  Kodovi/homework_3/line_fitting \
+  Kodovi/homework_4/ekf_line_localization
 source install/setup.bash
 ```
 
@@ -122,6 +125,12 @@ ros2 launch ekf_line_localization homework_4.launch.py \
 The waypoint list is in `config/waypoints.yaml`. The controller publishes
 velocity commands to `/cmd_vel` and respects the TurtleBot3 Burger limits:
 `|v| <= 0.22 m/s`, `|omega| <= 2.84 rad/s`.
+
+Assignment 6 keeps the Homework 2 automatic-controller structure: the waypoint
+controller imports `compute_polar_errors(...)` and
+`compute_rho_alpha_beta_control(...)` from `homework_2_control.controller_math`,
+then closes the same `rho/alpha/beta` control law through `/ekf_pose` instead
+of `/odom`.
 
 For an automatic Assignment 6 test that starts Gazebo, the EKF waypoint mission,
 RViz, and monitors `/waypoint_index` until all waypoints are reached:

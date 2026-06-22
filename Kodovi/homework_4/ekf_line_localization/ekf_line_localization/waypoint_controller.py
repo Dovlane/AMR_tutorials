@@ -10,6 +10,10 @@ from typing import Optional
 from ament_index_python.packages import get_package_share_directory
 from ament_index_python.packages import PackageNotFoundError
 from geometry_msgs.msg import PoseWithCovarianceStamped, Twist
+from homework_2_control.controller_math import (
+    compute_polar_errors as compute_homework2_polar_errors,
+    compute_rho_alpha_beta_control as compute_homework2_rho_alpha_beta_control,
+)
 from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.executors import ExternalShutdownException
@@ -98,6 +102,7 @@ class EkfWaypointController(Node):
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
         self.declare_parameter("waypoint_index_topic", "/waypoint_index")
         self.declare_parameter("control_period", 0.02)
+        # Same polar-controller gains used in Homework 2 automatic mode.
         self.declare_parameter("k_rho", 0.8)
         self.declare_parameter("k_alpha", 2.8)
         self.declare_parameter("k_beta", -0.6)
@@ -222,20 +227,45 @@ class EkfWaypointController(Node):
             twist.angular.z = self.k_yaw * yaw_error
             return twist, False
 
-        heading_to_goal = math.atan2(dy, dx)
-        alpha = normalize_angle(heading_to_goal - self.pose.yaw)
+        return self.compute_homework2_auto_twist(waypoint, dx, dy, rho), False
+
+    def compute_homework2_auto_twist(
+        self,
+        waypoint: Waypoint,
+        dx: float,
+        dy: float,
+        rho: float,
+    ) -> Twist:
+        """Same structure as Homework 2 compute_auto_twist, using EKF feedback."""
+
+        alpha, beta = compute_homework2_polar_errors(
+            self.pose.yaw,
+            dx,
+            dy,
+        )
+        # Homework 2 used point goals with goal_yaw = 0; Assignment 6 waypoints
+        # are poses, so beta is shifted by the requested final waypoint yaw.
+        beta = normalize_angle(beta + waypoint.yaw)
         direction = 1.0
 
         if bool(self.get_parameter("reverse_enabled").value) and abs(alpha) > math.pi / 2:
             direction = -1.0
             alpha = normalize_angle(alpha - math.copysign(math.pi, alpha))
 
-        beta = normalize_angle(waypoint.yaw - self.pose.yaw - alpha)
+        linear_velocity, angular_velocity = compute_homework2_rho_alpha_beta_control(
+            rho,
+            alpha,
+            beta,
+            self.k_rho,
+            self.k_alpha,
+            self.k_beta,
+            direction,
+        )
 
         twist = Twist()
-        twist.linear.x = direction * self.k_rho * rho
-        twist.angular.z = self.k_alpha * alpha + self.k_beta * beta
-        return twist, False
+        twist.linear.x = linear_velocity
+        twist.angular.z = angular_velocity
+        return twist
 
     def limit_twist(self, twist: Twist) -> Twist:
         limited = Twist()

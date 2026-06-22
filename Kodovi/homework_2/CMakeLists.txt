@@ -6,7 +6,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+
+ament_python_install_package(homework_2_control)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/RobotCommand.srv"

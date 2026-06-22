@@ -11,6 +11,7 @@
 
   <depend>ament_index_python</depend>
   <depend>geometry_msgs</depend>
+  <depend>homework_2</depend>
   <depend>line_fitting</depend>
   <depend>nav_msgs</depend>
   <depend>rclpy</depend>

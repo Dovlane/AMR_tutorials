@@ -70,6 +70,7 @@ build_workspace() {
   source_ros
   cd "$ROOT_DIR"
   colcon build --base-paths \
+    Kodovi/homework_2 \
     Kodovi/homework_3/line_fitting \
     Kodovi/homework_4/ekf_line_localization
 }

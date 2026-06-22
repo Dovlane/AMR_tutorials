@@ -13,6 +13,13 @@ from rclpy._rclpy_pybind11 import RCLError
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
+from homework_2_control.controller_math import (
+    clamp,
+    clamp_abs,
+    compute_polar_errors,
+    compute_rho_alpha_beta_control,
+    normalize_angle,
+)
 from homework_2.srv import RobotCommand
 
 
@@ -45,25 +52,6 @@ class AutoGoal:
     controller_type: int
     linear_speed: float
     angular_speed: float
-
-
-def normalize_angle(angle: float) -> float:
-    return (angle + math.pi) % (2.0 * math.pi) - math.pi
-
-
-def clamp(value: float, lower: float, upper: float) -> float:
-    return max(lower, min(upper, value))
-
-
-def clamp_abs(value: float, limit: float) -> float:
-    return clamp(value, -abs(limit), abs(limit))
-
-
-def compute_polar_errors(robot_yaw: float, dx: float, dy: float) -> tuple[float, float]:
-    heading_to_goal = math.atan2(dy, dx)
-    alpha = normalize_angle(heading_to_goal - robot_yaw)
-    beta = normalize_angle(-robot_yaw - alpha)
-    return alpha, beta
 
 
 class Homework2Controller(Node):
@@ -298,8 +286,15 @@ class Homework2Controller(Node):
             direction = -1.0
             alpha = normalize_angle(alpha - math.copysign(math.pi, alpha))
 
-        linear_velocity = direction * self.k_rho * rho
-        angular_velocity = self.k_alpha * alpha + self.k_beta * beta
+        linear_velocity, angular_velocity = compute_rho_alpha_beta_control(
+            rho,
+            alpha,
+            beta,
+            self.k_rho,
+            self.k_alpha,
+            self.k_beta,
+            direction,
+        )
 
         if goal.controller_type == CONTROLLER_CONSTANT_SPEED:
             linear_velocity, angular_velocity = self.scale_to_constant_speed(
