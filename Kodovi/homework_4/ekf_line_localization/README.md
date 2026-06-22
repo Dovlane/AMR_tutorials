@@ -123,6 +123,18 @@ The waypoint list is in `config/waypoints.yaml`. The controller publishes
 velocity commands to `/cmd_vel` and respects the TurtleBot3 Burger limits:
 `|v| <= 0.22 m/s`, `|omega| <= 2.84 rad/s`.
 
+For an automatic Assignment 6 test that starts Gazebo, the EKF waypoint mission,
+RViz, and monitors `/waypoint_index` until all waypoints are reached:
+
+```bash
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment6_test.sh all
+```
+
+Use `SKIP_BUILD=1` if the workspace is already built, `START_RVIZ=0` for a
+headless run, and `MISSION_TIMEOUT=360` if the mission needs more time. The
+script cleans stale Gazebo, EKF, waypoint-controller, RViz, and map-TF
+processes by default; run it with `CLEAN_START=0` to keep an existing stack.
+
 ## Record Experiment Bags
 
 Run one bag per configuration:
