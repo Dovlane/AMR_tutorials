@@ -5,6 +5,8 @@ import numpy
 from ekf_line_localization.ekf import (
     associate_measurements,
     filter_step,
+    load_line_map,
+    load_line_segments,
     measurement_function,
     transition_function,
 )
@@ -52,3 +54,30 @@ def test_association_and_filter_step_reduce_line_radius_error():
     assert corrected_pose[0] > 0.0
     assert corrected_covariance[0, 0] < covariance[0, 0]
     assert math.isfinite(corrected_covariance[2, 2])
+
+
+def test_map_loader_keeps_segments_separate_from_line_features(tmp_path):
+    map_file = tmp_path / "lines.yaml"
+    map_file.write_text(
+        """
+walls:
+  1: [0.0, 1.0]
+  2: [1.5708, 2.0]
+segments:
+  1: [[1.0, -0.5], [1.0, 0.5]]
+  2: [[-0.5, 2.0], [0.5, 2.0]]
+""",
+        encoding="utf-8",
+    )
+
+    lines = load_line_map(map_file)
+    segments = load_line_segments(map_file)
+
+    numpy.testing.assert_allclose(lines, [[0.0, 1.0], [1.5708, 2.0]])
+    numpy.testing.assert_allclose(
+        segments,
+        [
+            [[1.0, -0.5], [1.0, 0.5]],
+            [[-0.5, 2.0], [0.5, 2.0]],
+        ],
+    )

@@ -12,6 +12,10 @@ This package implements the fourth AMR assignment:
 The scan line extraction is reused from homework 3 through the `line_fitting`
 package.
 
+In `config/turtlebot3_maze_lines.yaml`, the `walls:` section is the EKF map
+`M` in `[alpha, r]` form. The optional `segments:` section is used only to draw
+clean finite wall markers in RViz.
+
 ## Important Files
 
 ```text
@@ -70,6 +74,8 @@ transform, RViz, and `teleop_keyboard`, run:
 ```
 
 Use `SKIP_BUILD=1` before the command if the workspace is already built.
+If RViz flickers after repeated launches, clean stale test processes with
+`./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment5_test.sh stop`.
 
 Then teleoperate in another terminal:
 

@@ -202,6 +202,35 @@ def load_line_map(map_file: str | Path) -> LineArray:
     return numpy.asarray(lines, dtype=float)
 
 
+def load_line_segments(map_file: str | Path) -> numpy.ndarray:
+    with Path(map_file).open("r", encoding="utf-8") as stream:
+        data = yaml.safe_load(stream) or {}
+
+    raw_segments = data.get("segments", data.get("wall_segments", []))
+    if not raw_segments:
+        return numpy.zeros((0, 2, 2), dtype=float)
+
+    if isinstance(raw_segments, dict):
+        raw_segment_iterable = [
+            raw_segments[key]
+            for key in sorted(raw_segments, key=lambda value: int(value))
+        ]
+    else:
+        raw_segment_iterable = raw_segments
+
+    segments = []
+    for raw_segment in raw_segment_iterable:
+        start, end = raw_segment
+        segments.append(
+            [
+                [float(start[0]), float(start[1])],
+                [float(end[0]), float(end[1])],
+            ]
+        )
+
+    return numpy.asarray(segments, dtype=float).reshape((-1, 2, 2))
+
+
 def associate_measurements(
     pose: Sequence[float],
     covariance: Sequence[float] | numpy.ndarray,

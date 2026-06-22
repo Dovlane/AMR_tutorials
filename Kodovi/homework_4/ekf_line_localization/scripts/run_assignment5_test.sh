@@ -18,9 +18,11 @@ Usage:
   $0 rviz      Start RViz with the EKF visualization config.
   $0 teleop    Start TurtleBot3 teleop_keyboard.
   $0 check     Print key topics and one /ekf_pose message.
+  $0 stop      Stop stale processes started by this helper/test stack.
 
 Environment:
   SKIP_BUILD=1     Skip build in "all" mode.
+  CLEAN_START=0    Do not stop stale test processes before "all" mode.
   LOG_DIR=path     Directory for logs from "all" mode.
 EOF
 }
@@ -31,15 +33,24 @@ source_ros() {
     exit 1
   fi
 
-  # shellcheck disable=SC1091
-  source /opt/ros/humble/setup.bash
+  source_setup_file /opt/ros/humble/setup.bash
 
   if [[ -f "$ROOT_DIR/install/setup.bash" ]]; then
-    # shellcheck disable=SC1091
-    source "$ROOT_DIR/install/setup.bash"
+    source_setup_file "$ROOT_DIR/install/setup.bash"
   fi
 
   export TURTLEBOT3_MODEL="${TURTLEBOT3_MODEL:-burger}"
+}
+
+source_setup_file() {
+  local setup_file="$1"
+
+  # ROS setup files may read optional variables that are unset. Keep nounset for
+  # this script, but relax it while sourcing ROS-generated setup code.
+  set +u
+  # shellcheck disable=SC1090
+  source "$setup_file"
+  set -u
 }
 
 build_workspace() {
@@ -90,6 +101,23 @@ cleanup() {
   fi
 }
 
+stop_existing() {
+  echo "Stopping stale homework 4 test processes..."
+  pkill -TERM -f "ekf_line_localization/lib/ekf_line_localization/ekf_line_localization" 2>/dev/null || true
+  pkill -TERM -f "tf2_ros/static_transform_publisher .* map odom" 2>/dev/null || true
+  pkill -TERM -f "turtlebot3_maze.launch.py" 2>/dev/null || true
+  pkill -TERM -f "rviz2 .*ekf_line_localization.rviz" 2>/dev/null || true
+  pkill -TERM -f "turtlebot3_teleop.*teleop_keyboard" 2>/dev/null || true
+  pkill -TERM -f "robot_state_publisher .*__node:=robot_state_publisher" 2>/dev/null || true
+  pkill -TERM -f "gzserver .*turtlebot3_gazebo/worlds/maze.world" 2>/dev/null || true
+  pkill -TERM -f "gzclient" 2>/dev/null || true
+  sleep 1
+}
+
+run_stop() {
+  stop_existing
+}
+
 run_sim() {
   source_ros
   cd "$ROOT_DIR"
@@ -137,6 +165,10 @@ run_all() {
   trap cleanup EXIT INT TERM
   source_ros
 
+  if [[ "${CLEAN_START:-1}" == "1" ]]; then
+    stop_existing
+  fi
+
   if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
     build_workspace
     source_ros
@@ -170,6 +202,7 @@ main() {
     rviz) run_rviz ;;
     teleop) run_teleop ;;
     check) run_check ;;
+    stop) run_stop ;;
     -h|--help|help) usage ;;
     *)
       usage

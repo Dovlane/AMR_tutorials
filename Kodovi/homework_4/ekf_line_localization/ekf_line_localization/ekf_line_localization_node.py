@@ -23,6 +23,7 @@ from ekf_line_localization.ekf import (
     associate_measurements, # inside this function, the following functions are called: measurement_function, measurement_innovation, mahalanobis_distance
     filter_step,
     load_line_map,
+    load_line_segments,
     predict_covariance,
     transition_function,
 )
@@ -115,6 +116,13 @@ class EkfLineLocalizationNode(Node):
 
         map_file = str(self.get_parameter("map_file").value)
         self.map_lines = load_line_map(map_file)
+        self.map_segments = load_line_segments(map_file)
+        if len(self.map_segments) not in (0, len(self.map_lines)):
+            self.get_logger().warning(
+                "Map visualization segments count does not match line count; "
+                "falling back to generated line markers."
+            )
+            self.map_segments = numpy.zeros((0, 2, 2), dtype=float)
 
         pose_topic = str(self.get_parameter("pose_topic").value)
         association_topic = str(self.get_parameter("association_count_topic").value)
@@ -142,6 +150,7 @@ class EkfLineLocalizationNode(Node):
         self.previous_right_position: Optional[float] = None
         self.prediction_records: list[PredictionRecord] = []
         self.last_joint_warning_time = 0.0
+        self.map_markers_initialized = False
 
         joint_states_topic = str(self.get_parameter("joint_states_topic").value)
         scan_topic = str(self.get_parameter("scan_topic").value)
@@ -391,29 +400,36 @@ class EkfLineLocalizationNode(Node):
 
     def publish_map_markers(self) -> None:
         marker_array = MarkerArray()
+        marker_stamp = self.get_clock().now().to_msg()
 
-        delete_marker = Marker()
-        delete_marker.header.stamp = self.get_clock().now().to_msg()
-        delete_marker.header.frame_id = self.frame_id
-        delete_marker.ns = "ekf_line_map"
-        delete_marker.id = 0
-        delete_marker.action = Marker.DELETEALL
-        marker_array.markers.append(delete_marker)
+        if not self.map_markers_initialized:
+            delete_marker = Marker()
+            delete_marker.header.stamp = marker_stamp
+            delete_marker.header.frame_id = self.frame_id
+            delete_marker.ns = "ekf_line_map"
+            delete_marker.id = 0
+            delete_marker.action = Marker.DELETEALL
+            marker_array.markers.append(delete_marker)
+            self.map_markers_initialized = True
 
         marker_length = float(self.get_parameter("map_marker_length").value)
-        for index, line in enumerate(self.map_lines, start=1):
-            alpha, radius = line
-            normal = numpy.array([math.cos(alpha), math.sin(alpha)], dtype=float)
-            direction = numpy.array([-math.sin(alpha), math.cos(alpha)], dtype=float)
-            center = radius * normal
-            start = center - 0.5 * marker_length * direction
-            end = center + 0.5 * marker_length * direction
+        use_map_segments = len(self.map_segments) == len(self.map_lines)
+        for line_index, line in enumerate(self.map_lines):
+            if use_map_segments:
+                start, end = self.map_segments[line_index]
+            else:
+                alpha, radius = line
+                normal = numpy.array([math.cos(alpha), math.sin(alpha)], dtype=float)
+                direction = numpy.array([-math.sin(alpha), math.cos(alpha)], dtype=float)
+                center = radius * normal
+                start = center - 0.5 * marker_length * direction
+                end = center + 0.5 * marker_length * direction
 
             marker = Marker()
-            marker.header.stamp = delete_marker.header.stamp
+            marker.header.stamp = marker_stamp
             marker.header.frame_id = self.frame_id
             marker.ns = "ekf_line_map"
-            marker.id = index
+            marker.id = line_index + 1
             marker.type = Marker.LINE_STRIP
             marker.action = Marker.ADD
             marker.pose.orientation.w = 1.0
