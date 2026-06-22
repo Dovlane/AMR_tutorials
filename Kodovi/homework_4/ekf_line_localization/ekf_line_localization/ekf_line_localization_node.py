@@ -20,7 +20,7 @@ from std_msgs.msg import Bool, Int32
 from visualization_msgs.msg import Marker, MarkerArray
 
 from ekf_line_localization.ekf import (
-    associate_measurements,
+    associate_measurements, # inside this function, the following functions are called: measurement_function, measurement_innovation, mahalanobis_distance
     filter_step,
     load_line_map,
     predict_covariance,
@@ -126,13 +126,13 @@ class EkfLineLocalizationNode(Node):
             pose_topic,
             10,
         )
-        self.association_count_publisher = self.create_publisher(
+        self.association_count_publisher = self.create_publisher( # This tells how many map lines were successfully associated with observed laser lines in that scan cycle.
             Int32,
             association_topic,
             10,
         )
-        self.update_applied_publisher = self.create_publisher(Bool, update_topic, 10)
-        self.map_marker_publisher = self.create_publisher(
+        self.update_applied_publisher = self.create_publisher(Bool, update_topic, 10) # This tells whether the EKF correction step actually happened.
+        self.map_marker_publisher = self.create_publisher( # This tells whether the EKF correction step actually happened.
             MarkerArray,
             map_marker_topic,
             10,
@@ -216,7 +216,7 @@ class EkfLineLocalizationNode(Node):
             return
 
         record_index = self.find_record_index(stamp_to_seconds(message.header.stamp))
-        prior_record = self.prediction_records[record_index]
+        prior_record = self.prediction_records[record_index] # joint
 
         association = associate_measurements(
             prior_record.state_after,
@@ -228,7 +228,7 @@ class EkfLineLocalizationNode(Node):
         )
 
         if association.count == 0:
-            self.publish_update_result(0, False)
+            self.publish_update_result(0, False)  # count = 0, update_applied = False means no valid line association, so no correction.
             return
 
         corrected_state, corrected_covariance = filter_step(

@@ -62,6 +62,15 @@ source install/setup.bash
 ros2 launch ekf_line_localization ekf_line_localization.launch.py
 ```
 
+For a one-command local test that also starts Gazebo, the `map -> odom` RViz
+transform, RViz, and `teleop_keyboard`, run:
+
+```bash
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment5_test.sh all
+```
+
+Use `SKIP_BUILD=1` before the command if the workspace is already built.
+
 Then teleoperate in another terminal:
 
 ```bash

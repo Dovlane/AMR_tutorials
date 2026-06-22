@@ -210,10 +210,10 @@ def associate_measurements(
     map_lines: Sequence[Sequence[float]] | numpy.ndarray,
     validation_gate: float,
 ) -> AssociationResult:
-    pose_vector = as_pose_vector(pose)
-    pose_covariance = as_covariance_matrix(covariance)
-    observation_array = normalize_observations(observations)
-    map_array = normalize_observations(map_lines)
+    pose_vector = as_pose_vector(pose) # x_k|k-1 
+    pose_covariance = as_covariance_matrix(covariance) # P_k|k-1
+    observation_array = normalize_observations(observations) # z_t^j
+    map_array = normalize_observations(map_lines) # m_i
 
     if observation_array.size == 0 or map_array.size == 0:
         return empty_association()
@@ -225,15 +225,15 @@ def associate_measurements(
 
     predicted = []
     for map_line in map_array:
-        predicted.append(measurement_function(pose_vector, map_line))
+        predicted.append(measurement_function(pose_vector, map_line)) # z_t^{hat,i}, H_i
 
     candidates = []
     gate_squared = float(validation_gate) ** 2
     for observation_index, observation in enumerate(observation_array):
         observation_covariance = measurement_covariance_array[observation_index]
         for map_index, (predicted_measurement, hx) in enumerate(predicted):
-            innovation = measurement_innovation(observation, predicted_measurement)
-            innovation_covariance = hx @ pose_covariance @ hx.T + observation_covariance
+            innovation = measurement_innovation(observation, predicted_measurement) # z_t^j - z_t^{hat,i}
+            innovation_covariance = hx @ pose_covariance @ hx.T + observation_covariance # S_t^{ij} = H_i P_k|k-1 H_i^T + R_t^j
             distance = mahalanobis_distance(innovation, innovation_covariance)
             if distance < gate_squared:
                 candidates.append(
@@ -250,7 +250,7 @@ def associate_measurements(
     if not candidates:
         return empty_association()
 
-    candidates.sort(key=lambda candidate: candidate[0])
+    candidates.sort(key=lambda candidate: candidate[0]) # Sort by Mahalanobis distance
     used_observations = set()
     used_map_lines = set()
     innovations = []
@@ -349,13 +349,14 @@ def mahalanobis_distance(vector: numpy.ndarray, covariance: numpy.ndarray) -> fl
 
 
 def solve_kalman_gain(
-    covariance: numpy.ndarray,
-    jacobian: numpy.ndarray,
-    innovation_covariance: numpy.ndarray,
+    covariance: numpy.ndarray, # P_t^hat
+    jacobian: numpy.ndarray, # H
+    innovation_covariance: numpy.ndarray, # S_t = H P_t^hat H^T + R
 ) -> numpy.ndarray:
-    right_hand_side = jacobian @ covariance
+    right_hand_side = jacobian @ covariance # H P_t^hat = (P_t^hat H^T)^T
     try:
         return numpy.linalg.solve(innovation_covariance, right_hand_side).T
+        # S X = H P_t^hat -> X = S^{-1} H P_t^hat -> K = X^T = P_t^hat H^T S^{-1}
     except numpy.linalg.LinAlgError:
         jitter = numpy.eye(innovation_covariance.shape[0], dtype=float) * 1e-9
         return numpy.linalg.solve(innovation_covariance + jitter, right_hand_side).T

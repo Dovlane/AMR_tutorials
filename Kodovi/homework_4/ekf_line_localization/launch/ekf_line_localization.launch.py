@@ -23,6 +23,7 @@ def generate_launch_description():
             DeclareLaunchArgument("enable_correction", default_value="true"),
             DeclareLaunchArgument("validation_gate", default_value="3.0"),
             DeclareLaunchArgument("pose_topic", default_value="/ekf_pose"),
+            DeclareLaunchArgument("map_marker_length", default_value="1.6"),
             Node(
                 package="ekf_line_localization",
                 executable="ekf_line_localization",
@@ -44,6 +45,10 @@ def generate_launch_description():
                             value_type=float,
                         ),
                         "pose_topic": LaunchConfiguration("pose_topic"),
+                        "map_marker_length": ParameterValue(
+                            LaunchConfiguration("map_marker_length"),
+                            value_type=float,
+                        ),
                     }
                 ],
             ),

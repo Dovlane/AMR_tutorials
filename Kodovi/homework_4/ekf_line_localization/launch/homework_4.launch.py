@@ -24,6 +24,7 @@ def generate_launch_description():
             DeclareLaunchArgument("waypoint_file", default_value=default_waypoint_file),
             DeclareLaunchArgument("enable_correction", default_value="true"),
             DeclareLaunchArgument("validation_gate", default_value="3.0"),
+            DeclareLaunchArgument("map_marker_length", default_value="1.6"),
             DeclareLaunchArgument("feedback_topic", default_value="/ekf_pose"),
             DeclareLaunchArgument("feedback_type", default_value="pose"),
             Node(
@@ -44,6 +45,10 @@ def generate_launch_description():
                         ),
                         "validation_gate": ParameterValue(
                             LaunchConfiguration("validation_gate"),
+                            value_type=float,
+                        ),
+                        "map_marker_length": ParameterValue(
+                            LaunchConfiguration("map_marker_length"),
                             value_type=float,
                         ),
                     }
