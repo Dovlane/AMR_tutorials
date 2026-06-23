@@ -1,0 +1,23 @@
+assignment: 7
+run_id: hw4_b_ekf_corrected_gate_3p0_20260623_013246
+config_key: b
+config_id: hw4_b_ekf_corrected
+feedback_topic: /ekf_pose
+feedback_type: pose
+enable_correction: 'true'
+validation_gate: 3.0
+waypoint_file: /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_4/ekf_line_localization/config/waypoints.yaml
+topics:
+- /clock
+- /joint_states
+- /odom
+- /ekf_pose
+- /cmd_vel
+- /scan
+- /tf
+- /tf_static
+- /gazebo/model_states
+- /ekf_association_count
+- /ekf_update_applied
+- /waypoint_index
+- /ekf_map_lines

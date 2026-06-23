@@ -10,15 +10,19 @@
   <buildtool_depend>ament_python</buildtool_depend>
 
   <depend>ament_index_python</depend>
+  <depend>gazebo_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>homework_2</depend>
   <depend>line_fitting</depend>
   <depend>nav_msgs</depend>
   <depend>rclpy</depend>
+  <depend>rosbag2_py</depend>
+  <depend>rosidl_runtime_py</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>visualization_msgs</depend>
 
+  <exec_depend>python3-matplotlib</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-yaml</exec_depend>
 

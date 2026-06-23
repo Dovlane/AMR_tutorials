@@ -1,0 +1,23 @@
+assignment: 7
+run_id: hw4_a_odom_feedback_gate_3p0_20260623_013201
+config_key: a
+config_id: hw4_a_odom_feedback
+feedback_topic: /odom
+feedback_type: odom
+enable_correction: 'true'
+validation_gate: 3.0
+waypoint_file: /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_4/ekf_line_localization/config/waypoints.yaml
+topics:
+- /clock
+- /joint_states
+- /odom
+- /ekf_pose
+- /cmd_vel
+- /scan
+- /tf
+- /tf_static
+- /gazebo/model_states
+- /ekf_association_count
+- /ekf_update_applied
+- /waypoint_index
+- /ekf_map_lines

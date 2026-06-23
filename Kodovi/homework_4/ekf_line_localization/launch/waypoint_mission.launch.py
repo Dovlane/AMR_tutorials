@@ -18,6 +18,7 @@ def generate_launch_description():
             DeclareLaunchArgument("waypoint_file", default_value=default_waypoint_file),
             DeclareLaunchArgument("feedback_topic", default_value="/ekf_pose"),
             DeclareLaunchArgument("feedback_type", default_value="pose"),
+            DeclareLaunchArgument("start_delay_seconds", default_value="0.0"),
             Node(
                 package="ekf_line_localization",
                 executable="ekf_waypoint_controller",
@@ -32,6 +33,10 @@ def generate_launch_description():
                         "waypoint_file": LaunchConfiguration("waypoint_file"),
                         "feedback_topic": LaunchConfiguration("feedback_topic"),
                         "feedback_type": LaunchConfiguration("feedback_type"),
+                        "start_delay_seconds": ParameterValue(
+                            LaunchConfiguration("start_delay_seconds"),
+                            value_type=float,
+                        ),
                     }
                 ],
             ),

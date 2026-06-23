@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 from pathlib import Path
+import time
 from typing import Optional
 
 from ament_index_python.packages import get_package_share_directory
@@ -102,6 +103,7 @@ class EkfWaypointController(Node):
         self.declare_parameter("cmd_vel_topic", "/cmd_vel")
         self.declare_parameter("waypoint_index_topic", "/waypoint_index")
         self.declare_parameter("control_period", 0.02)
+        self.declare_parameter("start_delay_seconds", 0.0)
         # Same polar-controller gains used in Homework 2 automatic mode.
         self.declare_parameter("k_rho", 0.8)
         self.declare_parameter("k_alpha", 2.8)
@@ -123,11 +125,16 @@ class EkfWaypointController(Node):
         self.has_feedback = False
         self.current_waypoint_index = 0
         self.previous_twist = Twist()
+        self.started_at = time.monotonic()
 
         self.k_rho = float(self.get_parameter("k_rho").value)
         self.k_alpha = float(self.get_parameter("k_alpha").value)
         self.k_beta = float(self.get_parameter("k_beta").value)
         self.k_yaw = float(self.get_parameter("k_yaw").value)
+        self.start_delay_seconds = max(
+            0.0,
+            float(self.get_parameter("start_delay_seconds").value),
+        )
         self.position_tolerance = float(self.get_parameter("position_tolerance").value)
         self.yaw_tolerance = float(self.get_parameter("yaw_tolerance").value)
         self.max_linear_speed = float(self.get_parameter("max_linear_speed").value)
@@ -185,6 +192,10 @@ class EkfWaypointController(Node):
 
     def control_loop(self) -> None:
         if not self.has_feedback:
+            return
+
+        if time.monotonic() - self.started_at < self.start_delay_seconds:
+            self.stop_robot()
             return
 
         if self.current_waypoint_index >= len(self.waypoints):

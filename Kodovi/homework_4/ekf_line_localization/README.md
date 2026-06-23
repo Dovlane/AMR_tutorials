@@ -144,14 +144,63 @@ headless run, and `MISSION_TIMEOUT=360` if the mission needs more time. The
 script cleans stale Gazebo, EKF, waypoint-controller, RViz, and map-TF
 processes by default; run it with `CLEAN_START=0` to keep an existing stack.
 
+## Run Assignment 7 Configurations
+
+These scripts start Gazebo, `map -> odom`, EKF localization, the waypoint
+controller, and `ros2 bag record` from one terminal. Bags are written under
+`bags/` by default. Each bag also receives an `assignment7_run.yaml` manifest
+with the EKF/controller configuration and the recorded topic list.
+
+```bash
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_a_odom.sh
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_c_ekf_prediction_only.sh
+```
+
+To run all three configurations one after another:
+
+```bash
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_all.sh
+```
+
+For the complete task 7 dataset, the same command also repeats configuration
+(b) for `validation_gate=2.0` and `validation_gate=4.0`, then generates the
+analysis figures, CSV files, JSON metrics, and the LaTeX fragment consumed by
+`analysis/main.tex`.
+
+To analyze already recorded bags without running Gazebo:
+
+```bash
+./Kodovi/homework_4/ekf_line_localization/scripts/analyze_assignment7_bags.sh
+```
+
+Useful options:
+
+```bash
+SKIP_BUILD=1 START_RVIZ=1 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
+VALIDATION_GATE=2.0 BAG_NAME=hw4_b_gate_2 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
+VALIDATION_GATE=4.0 BAG_NAME=hw4_b_gate_4 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
+ANALYZE_AFTER_RUN=1 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_config.sh stop
+```
+
+The runner starts the waypoint controller with a short delay
+(`BAG_START_DELAY=5.0`) so `/cmd_vel` and `/waypoint_index` exist before the
+robot starts moving and the bag captures the mission from the beginning.
+The recorded topics are `/clock`, `/joint_states`, `/odom`, `/ekf_pose`,
+`/cmd_vel`, `/scan`, `/tf`, `/tf_static`, `/gazebo/model_states`,
+`/ekf_association_count`, `/ekf_update_applied`, `/waypoint_index`, and
+`/ekf_map_lines`.
+
 ## Record Experiment Bags
 
 Run one bag per configuration:
 
 ```bash
 ros2 bag record -o bags/hw4_b_ekf_corrected \
-  /odom /ekf_pose /cmd_vel /scan /tf /tf_static /gazebo/model_states \
-  /ekf_association_count /ekf_update_applied /waypoint_index
+  /clock /joint_states /odom /ekf_pose /cmd_vel /scan /tf /tf_static \
+  /gazebo/model_states /ekf_association_count /ekf_update_applied \
+  /waypoint_index /ekf_map_lines
 ```
 
 Use different output names for configurations (a), (b), and (c).

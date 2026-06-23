@@ -1,0 +1,23 @@
+assignment: 7
+run_id: hw4_c_ekf_prediction_only_gate_3p0_20260623_013331
+config_key: c
+config_id: hw4_c_ekf_prediction_only
+feedback_topic: /ekf_pose
+feedback_type: pose
+enable_correction: 'false'
+validation_gate: 3.0
+waypoint_file: /home/vladimir/workspace/AMR_tutorials/Kodovi/homework_4/ekf_line_localization/config/waypoints.yaml
+topics:
+- /clock
+- /joint_states
+- /odom
+- /ekf_pose
+- /cmd_vel
+- /scan
+- /tf
+- /tf_static
+- /gazebo/model_states
+- /ekf_association_count
+- /ekf_update_applied
+- /waypoint_index
+- /ekf_map_lines

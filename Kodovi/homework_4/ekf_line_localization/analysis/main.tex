@@ -1,0 +1,108 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[top=2cm,bottom=2cm,left=2.2cm,right=2.2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{float}
+\usepackage{multicol}
+\usepackage[section]{placeins}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{./}{results/figures/}}
+\sisetup{detect-all=true}
+
+\title{AMR Domaći 4 -- Zadatak 7\\Eksperiment i analiza EKF lokalizacije}
+\author{TurtleBot3 Burger, ROS 2 Humble, Gazebo}
+\date{\today}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+{\Large Univerzitet u Beogradu -- Elektrotehnički fakultet\par}
+\vspace{1.5cm}
+{\large Autonomni mobilni roboti\par}
+\vspace{2.5cm}
+{\huge\bfseries Domaći 4 -- Zadatak 7\par}
+\vspace{0.5cm}
+{\Large Eksperiment i analiza rezultata EKF lokalizacije zasnovane na linijama\par}
+\vfill
+{\large Platforma: TurtleBot3 Burger, ROS 2 Humble, Gazebo svet \texttt{turtlebot3\_maze}\par}
+\vspace{0.5cm}
+{\large Beograd, \today\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Cilj eksperimenta}
+
+Cilj zadatka je da se ista waypoint misija izvrši u tri konfiguracije:
+\begin{enumerate}
+    \item upravljačka petlja zatvorena preko odometrije \texttt{/odom};
+    \item upravljačka petlja zatvorena preko EKF estimacije \texttt{/ekf\_pose}, uz uključenu popravku estimacije;
+    \item upravljačka petlja zatvorena preko \texttt{/ekf\_pose}, ali sa isključenom popravkom, tako da filtar vrši samo predikciju.
+\end{enumerate}
+
+Tokom svake misije snimaju se sledeći topici:
+\begin{multicols}{2}
+\begin{itemize}
+    \item \texttt{/clock}
+    \item \texttt{/joint\_states}
+    \item \texttt{/odom}
+    \item \texttt{/ekf\_pose}
+    \item \texttt{/cmd\_vel}
+    \item \texttt{/scan}
+    \item \texttt{/tf}
+    \item \texttt{/tf\_static}
+    \item \texttt{/gazebo/model\_states}
+    \item \texttt{/ekf\_association\_count}
+    \item \texttt{/ekf\_update\_applied}
+    \item \texttt{/waypoint\_index}
+    \item \texttt{/ekf\_map\_lines}
+\end{itemize}
+\end{multicols}
+Gazebo poza iz topika \texttt{/gazebo/model\_states} koristi se kao ground truth.
+
+\section{Postavka eksperimenta}
+
+Waypoint misija je definisana u fajlu \texttt{config/waypoints.yaml}. Sve konfiguracije koriste iste referentne poze u frejmu \texttt{map}. U konfiguraciji (a) regulator dobija povratnu informaciju sa \texttt{/odom}; u konfiguracijama (b) i (c) dobija povratnu informaciju sa \texttt{/ekf\_pose}. U konfiguraciji (c) parametar \texttt{enable\_correction} je isključen, pa se EKF estimacija svodi na modelsku predikciju iz inkremenata točkova.
+
+Za analizu praga validacije ponavlja se konfiguracija (b) za više vrednosti praga $g$. Podrazumevana vrednost je $g=3$, a za poređenje se koriste dodatne vrednosti $g=2$ i $g=4$.
+
+\section{Automatska obrada podataka}
+
+Snimanje i analiza su automatizovani skriptama:
+\small
+\begin{verbatim}
+./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_all.sh
+./Kodovi/homework_4/ekf_line_localization/scripts/analyze_assignment7_bags.sh
+\end{verbatim}
+\normalsize
+
+Prva skripta pokreće svih pet potrebnih misija: konfiguracije (a), (b), (c), zatim konfiguraciju (b) za $g=2$ i $g=4$. Druga skripta čita već snimljene bagove, računa metrike, crta grafike i generiše LaTeX fragment \texttt{analysis/results/assignment7\_results.tex}.
+
+\IfFileExists{results/assignment7_results.tex}{
+    \input{results/assignment7_results.tex}
+}{
+    \section{Rezultati}
+    Rezultati još nisu generisani. Potrebno je pokrenuti
+    \texttt{./Kodovi/homework\_4/ekf\_line\_localization/scripts/run\_assignment7\_all.sh}
+    ili, ako su bagovi već snimljeni,
+    \texttt{./Kodovi/homework\_4/ekf\_line\_localization/scripts/analyze\_assignment7\_bags.sh}.
+}
+
+\FloatBarrier
+
+\begin{thebibliography}{9}
+\bibitem{domaci4}
+Materijal zadatka: \textit{Domaći 4 -- Prošireni Kalmanov filtar zasnovan na linijama za popravku lokalizacije mobilnog robota i zatvaranje upravljačke petlje}.
+\end{thebibliography}
+
+\end{document}
