@@ -163,10 +163,10 @@ To run all three configurations one after another:
 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_all.sh
 ```
 
-For the complete task 7 dataset, the same command also repeats configuration
-(b) for `validation_gate=2.0` and `validation_gate=4.0`, then generates the
-analysis figures, CSV files, JSON metrics, and the LaTeX fragment consumed by
-`analysis/main.tex`.
+For the complete task 7 dataset, the same command uses `validation_gate=5.0`
+as the reference run and repeats configuration (b) for `validation_gate=2.0`
+and `validation_gate=10.0`. It then generates the analysis figures, CSV files,
+JSON metrics, and the LaTeX fragment consumed by `analysis/main.tex`.
 
 To analyze already recorded bags without running Gazebo:
 
@@ -179,7 +179,7 @@ Useful options:
 ```bash
 SKIP_BUILD=1 START_RVIZ=1 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
 VALIDATION_GATE=2.0 BAG_NAME=hw4_b_gate_2 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
-VALIDATION_GATE=4.0 BAG_NAME=hw4_b_gate_4 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
+VALIDATION_GATE=10.0 BAG_NAME=hw4_b_gate_10 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
 ANALYZE_AFTER_RUN=1 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_b_ekf_corrected.sh
 ./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_config.sh stop
 ```
@@ -219,8 +219,8 @@ For task 7, compare the same waypoint mission in all three configurations.
 4. Mark correction times from `/ekf_update_applied`; inspect their effect on
    `/cmd_vel`. The controller includes speed saturation and optional rate
    limiting to reduce command jumps after EKF pose discontinuities.
-5. Repeat configuration (b) with at least two `validation_gate` values, for
-   example `2.0` and `4.0`, and compare `/ekf_association_count`.
+5. Repeat configuration (b) with `validation_gate=2.0`, `5.0`, and `10.0`,
+   and compare `/ekf_association_count`.
 
 The EKF uses constant measurement covariance
 `sigma_alpha = 0.05 rad`, `sigma_r = 0.02 m`. This assumption is weakest when

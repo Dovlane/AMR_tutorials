@@ -13,7 +13,7 @@ a_odom_feedback
 b_ekf_feedback_corrected
 c_ekf_feedback_prediction_only
 b_gate_2
-b_gate_4
+b_gate_10
 ```
 
 Record topics:

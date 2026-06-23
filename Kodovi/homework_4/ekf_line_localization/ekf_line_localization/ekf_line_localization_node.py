@@ -75,7 +75,7 @@ class EkfLineLocalizationNode(Node):
         self.declare_parameter("motion_noise_gain", 0.02)
         self.declare_parameter("sigma_alpha", 0.05)
         self.declare_parameter("sigma_r", 0.02)
-        self.declare_parameter("validation_gate", 3.0)
+        self.declare_parameter("validation_gate", 5.0)
         self.declare_parameter("enable_correction", True)
         self.declare_parameter("history_size", 500)
         self.declare_parameter("scan_topic", "/scan")

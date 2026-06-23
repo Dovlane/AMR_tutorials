@@ -41,6 +41,15 @@ CONFIG_LABELS = {
     "c": "Konfiguracija (c): povratna sprega po /ekf_pose, samo predikcija",
 }
 
+REFERENCE_VALIDATION_GATE = 5.0
+LOW_VALIDATION_GATE = 2.0
+HIGH_VALIDATION_GATE = 10.0
+GATE_ANALYSIS_VALUES = (
+    LOW_VALIDATION_GATE,
+    REFERENCE_VALIDATION_GATE,
+    HIGH_VALIDATION_GATE,
+)
+
 
 @dataclass(frozen=True)
 class PoseSample:
@@ -149,6 +158,19 @@ class InnovationStat:
     t: float
     observation_count: int
     association_count: int
+    mean_mahalanobis: float
+    max_mahalanobis: float
+    mean_abs_alpha: float
+    mean_abs_radius: float
+
+
+@dataclass(frozen=True)
+class InnovationWindowSummary:
+    label: str
+    start_s: float
+    end_s: float
+    observation_mean: float
+    association_mean: float
     mean_mahalanobis: float
     max_mahalanobis: float
     mean_abs_alpha: float
@@ -268,7 +290,7 @@ def infer_run_metadata(path: Path) -> dict:
         if match:
             validation_gate = float(match.group(1).replace("p", "."))
         else:
-            validation_gate = 3.0
+            validation_gate = REFERENCE_VALIDATION_GATE
 
     return {
         "run_id": str(manifest.get("run_id", name)),
@@ -541,7 +563,7 @@ def select_primary_runs(runs: Sequence[RunData]) -> dict[str, RunData]:
         if not candidates:
             continue
         if key == "b":
-            candidates.sort(key=lambda run: abs(run.validation_gate - 3.0))
+            candidates.sort(key=lambda run: abs(run.validation_gate - REFERENCE_VALIDATION_GATE))
         else:
             candidates.sort(key=lambda run: run.run_id)
         selected[key] = candidates[0]
@@ -557,6 +579,153 @@ def runs_for_gate_analysis(runs: Sequence[RunData]) -> list[RunData]:
 
 def relative_times(run: RunData, samples: Sequence[object]) -> numpy.ndarray:
     return numpy.asarray([sample.t - run.start_time for sample in samples], dtype=float)
+
+
+def waypoint_marker_events(run: RunData | None) -> list[tuple[float, int]]:
+    if run is None:
+        return []
+    return [
+        (event_time - run.start_time, waypoint_index)
+        for event_time, waypoint_index in waypoint_reach_events(run.waypoint_index)
+    ]
+
+
+def draw_waypoint_markers(axes: object, run: RunData | None) -> None:
+    events = waypoint_marker_events(run)
+    if not events:
+        return
+
+    axes_list = list(numpy.ravel(axes))
+    for axis in axes_list:
+        for event_time, _ in events:
+            axis.axvline(
+                event_time,
+                color="black",
+                linestyle="--",
+                linewidth=0.9,
+                alpha=0.48,
+            )
+
+    label_axis = axes_list[0]
+    ymin, ymax = label_axis.get_ylim()
+    label_y = ymax - 0.04 * (ymax - ymin)
+    for event_time, waypoint_index in events:
+        label_axis.text(
+            event_time,
+            label_y,
+            f"WP{waypoint_index + 1}",
+            rotation=90,
+            va="top",
+            ha="right",
+            fontsize=7,
+            color="black",
+        )
+
+
+def reference_gate_run(runs: Sequence[RunData]) -> RunData | None:
+    gate_runs = [run for run in runs if run.config_key == "b" and run.waypoint_index]
+    if not gate_runs:
+        return None
+    return min(
+        gate_runs,
+        key=lambda run: (abs(run.validation_gate - REFERENCE_VALIDATION_GATE), run.run_id),
+    )
+
+
+def analysis_window_ranges(run: RunData | None) -> list[tuple[str, float, float]]:
+    if run is None:
+        return []
+
+    events = waypoint_marker_events(run)
+    if len(events) >= 10:
+        end_time = max((sample.t for sample in run.association_count), default=run.start_time)
+        return [
+            ("početak", 0.0, events[1][0]),
+            ("WP4--WP8", events[3][0], events[7][0]),
+            ("kraj", events[8][0], end_time - run.start_time),
+        ]
+
+    if run.association_count:
+        end_time = run.association_count[-1].t - run.start_time
+        return [
+            ("početak", 0.0, min(0.2 * end_time, end_time)),
+            ("sredina", 0.4 * end_time, 0.75 * end_time),
+            ("kraj", 0.85 * end_time, end_time),
+        ]
+    return []
+
+
+def draw_analysis_windows(axes: object, run: RunData | None) -> None:
+    windows = analysis_window_ranges(run)
+    if not windows:
+        return
+
+    colors = ["tab:blue", "tab:orange", "tab:blue"]
+    axes_list = list(numpy.ravel(axes))
+    for axis in axes_list:
+        for (label, start, end), color in zip(windows, colors):
+            axis.axvspan(start, end, color=color, alpha=0.055, linewidth=0)
+
+    label_axis = axes_list[0]
+    ymin, ymax = label_axis.get_ylim()
+    label_y = ymax - 0.06 * (ymax - ymin)
+    for label, start, end in windows:
+        label_axis.text(
+            0.5 * (start + end),
+            label_y,
+            label,
+            ha="center",
+            va="top",
+            fontsize=7,
+            color="dimgray",
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.65, "pad": 1.0},
+        )
+
+
+def mean_finite(values: Iterable[float]) -> float:
+    finite_values = [float(value) for value in values if math.isfinite(float(value))]
+    if not finite_values:
+        return math.nan
+    return float(numpy.mean(finite_values))
+
+
+def max_finite(values: Iterable[float]) -> float:
+    finite_values = [float(value) for value in values if math.isfinite(float(value))]
+    if not finite_values:
+        return math.nan
+    return float(numpy.max(finite_values))
+
+
+def summarize_innovation_windows(
+    run: RunData | None,
+    stats: Sequence[InnovationStat],
+) -> list[InnovationWindowSummary]:
+    if run is None or not stats:
+        return []
+
+    summaries = []
+    for label, start, end in analysis_window_ranges(run):
+        samples = [
+            sample
+            for sample in stats
+            if start <= sample.t - run.start_time <= end
+        ]
+        if not samples:
+            continue
+        summaries.append(
+            InnovationWindowSummary(
+                label=label,
+                start_s=start,
+                end_s=end,
+                observation_mean=mean_finite(sample.observation_count for sample in samples),
+                association_mean=mean_finite(sample.association_count for sample in samples),
+                mean_mahalanobis=mean_finite(sample.mean_mahalanobis for sample in samples),
+                max_mahalanobis=max_finite(sample.max_mahalanobis for sample in samples),
+                mean_abs_alpha=mean_finite(sample.mean_abs_alpha for sample in samples),
+                mean_abs_radius=mean_finite(sample.mean_abs_radius for sample in samples),
+            )
+        )
+    return summaries
 
 
 def ensure_output_dirs(output_dir: Path) -> tuple[Path, Path]:
@@ -622,7 +791,10 @@ def plot_waypoint_errors(path: Path, errors: Sequence[WaypointError]) -> None:
         error
         for error in errors
         if error.config_key in ("a", "b", "c")
-        and (error.config_key != "b" or abs(error.validation_gate - 3.0) < 1e-6)
+        and (
+            error.config_key != "b"
+            or abs(error.validation_gate - REFERENCE_VALIDATION_GATE) < 1e-6
+        )
     ]
     if not primary_errors:
         primary_errors = list(errors)
@@ -743,6 +915,7 @@ def plot_gate_associations(path: Path, runs: Sequence[RunData]) -> None:
         return
 
     fig, ax = plt.subplots(figsize=(9, 4.8))
+    marker_run = reference_gate_run(gate_runs)
     for run in gate_runs:
         ax.plot(
             relative_times(run, run.association_count),
@@ -753,6 +926,12 @@ def plot_gate_associations(path: Path, runs: Sequence[RunData]) -> None:
     ax.set_xlabel("Vreme [s]")
     ax.set_ylabel("Broj asociranih odlika")
     ax.grid(True, alpha=0.35)
+    draw_analysis_windows(ax, marker_run)
+    draw_waypoint_markers(ax, marker_run)
+    ax.set_title(
+        f"Crne linije: dostignuti waypoint-i u referentnoj vožnji "
+        f"g={REFERENCE_VALIDATION_GATE:g}"
+    )
     ax.legend(title="Prag validacije")
     fig.tight_layout()
     fig.savefig(path, dpi=180)
@@ -781,6 +960,12 @@ def plot_innovation_stats(path: Path, run: RunData | None, stats: Sequence[Innov
     axes[2].legend()
     for axis in axes:
         axis.grid(True, alpha=0.35)
+    draw_analysis_windows(axes, run)
+    draw_waypoint_markers(axes, run)
+    axes[0].set_title(
+        f"Crne linije: dostignuti waypoint-i u referentnoj vožnji "
+        f"g={REFERENCE_VALIDATION_GATE:g}"
+    )
     fig.tight_layout()
     fig.savefig(path, dpi=180)
     plt.close(fig)
@@ -845,6 +1030,14 @@ def summarize_runs(
                 "cmd_angular_abs_max": _max(abs(sample.angular) for sample in run.cmd_vel),
                 "cmd_linear_step_max": _max_abs_step([sample.linear for sample in run.cmd_vel]),
                 "cmd_angular_step_max": _max_abs_step([sample.angular for sample in run.cmd_vel]),
+                "cmd_linear_update_step_max": _max_abs_command_step_after_updates(
+                    run,
+                    "linear",
+                ),
+                "cmd_angular_update_step_max": _max_abs_command_step_after_updates(
+                    run,
+                    "angular",
+                ),
                 "ekf_cov_x_mean": _mean(sample.cov_x for sample in run.ekf),
                 "ekf_cov_y_mean": _mean(sample.cov_y for sample in run.ekf),
                 "ekf_cov_yaw_mean": _mean(sample.cov_yaw for sample in run.ekf),
@@ -892,6 +1085,39 @@ def _max_abs_step(values: Sequence[float]) -> float | None:
     return float(numpy.max(numpy.abs(numpy.diff(numpy.asarray(values, dtype=float)))))
 
 
+def _max_abs_command_step_after_updates(
+    run: RunData,
+    field_name: str,
+    window_s: float = 0.12,
+) -> float | None:
+    if len(run.cmd_vel) < 2:
+        return None
+
+    update_times = [sample.t for sample in run.update_applied if sample.value > 0.5]
+    if not update_times:
+        return None
+
+    values = []
+    for update_t in update_times:
+        after_index = next(
+            (
+                index
+                for index, command in enumerate(run.cmd_vel)
+                if command.t >= update_t
+            ),
+            None,
+        )
+        if after_index is None or after_index == 0:
+            continue
+        if run.cmd_vel[after_index].t - update_t > window_s:
+            continue
+        current = getattr(run.cmd_vel[after_index], field_name)
+        previous = getattr(run.cmd_vel[after_index - 1], field_name)
+        values.append(abs(current - previous))
+
+    return float(max(values)) if values else None
+
+
 def _fmt(value: float | int | None, precision: int = 3) -> str:
     if value is None:
         return "--"
@@ -909,7 +1135,9 @@ def _run_by_config(summary: dict, config_key: str, gate: float | None = None) ->
     if not candidates:
         return None
     if config_key == "b" and gate is None:
-        candidates.sort(key=lambda run: abs(float(run["validation_gate"]) - 3.0))
+        candidates.sort(
+            key=lambda run: abs(float(run["validation_gate"]) - REFERENCE_VALIDATION_GATE)
+        )
     return candidates[0]
 
 
@@ -927,13 +1155,14 @@ def write_results_tex(
     path: Path,
     summary: dict,
     waypoint_errors: Sequence[WaypointError],
+    innovation_windows: Sequence[InnovationWindowSummary],
     has_gate_runs: bool,
 ) -> None:
     run_a = _run_by_config(summary, "a")
-    run_b = _run_by_config(summary, "b", 3.0)
+    run_b = _run_by_config(summary, "b", REFERENCE_VALIDATION_GATE)
     run_c = _run_by_config(summary, "c")
-    run_g2 = _run_by_config(summary, "b", 2.0)
-    run_g4 = _run_by_config(summary, "b", 4.0)
+    run_g2 = _run_by_config(summary, "b", LOW_VALIDATION_GATE)
+    run_g10 = _run_by_config(summary, "b", HIGH_VALIDATION_GATE)
     estimation = summary.get("configuration_b_estimation_error", {})
     improvement_a = _percent_improvement(run_a, run_b)
     improvement_c = _percent_improvement(run_c, run_b)
@@ -948,19 +1177,23 @@ def write_results_tex(
         "Za analizu praga validacije dodatno se ponavlja konfiguracija (b) za više vrednosti praga $g$.",
         "",
         "\\subsection{Poređenje trajektorija}",
-        "\\begin{figure}[h]",
+        _trajectory_discussion(run_a, run_b, run_c, improvement_a, improvement_c),
+        "",
+        "Na sledeća dva grafika prikazani su prvo oblik putanja u ravni, a zatim greške "
+        "u trenucima kada regulator prijavi da je waypoint dostignut. Time se vizuelno poređenje "
+        "direktno vezuje za numeričke metrike iz tabela ispod grafika.",
+        "",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.92\\linewidth]{results/figures/assignment7_trajectories.png}",
         "\\caption{Ground truth putanje robota za tri konfiguracije i zadate referentne poze.}",
         "\\end{figure}",
         "",
-        "\\begin{figure}[h]",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.86\\linewidth]{results/figures/assignment7_waypoint_errors.png}",
         "\\caption{Rastojanje ground truth poze od reference u trenutku kada regulator proglasi waypoint dostignutim.}",
         "\\end{figure}",
-        "",
-        _trajectory_discussion(run_a, run_b, run_c, improvement_a, improvement_c),
         "",
         _summary_table(summary),
         "",
@@ -971,55 +1204,72 @@ def write_results_tex(
         "",
         _waypoint_table(waypoint_errors),
         "",
+        "\\FloatBarrier",
+        "",
         "\\subsection{Greška estimacije}",
-        "\\begin{figure}[h]",
+        _estimation_discussion(estimation),
+        "",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.92\\linewidth]{results/figures/assignment7_estimation_error_b.png}",
         "\\caption{Greška pozicije i orijentacije za /ekf\\_pose i /odom u odnosu na Gazebo ground truth, konfiguracija (b).}",
         "\\end{figure}",
         "",
-        _estimation_discussion(estimation),
+        "\\FloatBarrier",
         "",
         "\\subsection{Evolucija kovarijanse}",
-        "\\begin{figure}[h]",
+        _covariance_discussion(run_b),
+        "",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.92\\linewidth]{results/figures/assignment7_covariance_b.png}",
         "\\caption{Dijagonalni elementi kovarijanse iz /ekf\\_pose i /odom. Crvene vertikalne linije označavaju uspešne EKF popravke.}",
         "\\end{figure}",
         "",
-        _covariance_discussion(run_b),
+        "\\FloatBarrier",
         "",
         "\\subsection{Uticaj popravke na upravljanje}",
-        "\\begin{figure}[h]",
+        _control_discussion(run_b),
+        "",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.92\\linewidth]{results/figures/assignment7_cmd_vel_updates_b.png}",
         "\\caption{Signal /cmd\\_vel u konfiguraciji (b), sa označenim trenucima EKF popravke.}",
         "\\end{figure}",
         "",
-        _control_discussion(run_b),
+        "\\FloatBarrier",
         "",
         "\\subsection{Uticaj praga validacije}",
-        "\\begin{figure}[h]",
+        _gate_table(run_g2, run_b, run_g10),
+        "",
+        _innovation_window_table(innovation_windows),
+        "",
+        _gate_discussion(run_g2, run_b, run_g10, innovation_windows),
+        "",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.92\\linewidth]{results/figures/assignment7_gate_associations.png}",
-        "\\caption{Broj asociranih odlika po ciklusu za različite vrednosti praga validacije $g$.}",
+        "\\caption{Broj asociranih odlika po ciklusu za različite vrednosti praga validacije $g$. "
+        f"Crne isprekidane linije označavaju trenutke dostizanja waypoint-a u referentnoj vožnji "
+        f"$g={REFERENCE_VALIDATION_GATE:g}$; plavo su delovi sa više vidljivih zidova, a narandžasto "
+        "deo sa kraćim i kosijim segmentima.}",
         "\\end{figure}",
         "",
-        "\\begin{figure}[h]",
+        "\\begin{figure}[H]",
         "\\centering",
         "\\includegraphics[width=0.92\\linewidth]{results/figures/assignment7_innovation_stats.png}",
-        "\\caption{Offline statistika inovacija dobijena ponovnom primenom Split-and-Merge algoritma nad /scan.}",
+        "\\caption{Offline statistika inovacija dobijena ponovnom primenom Split-and-Merge algoritma nad /scan. "
+        f"Crne isprekidane linije označavaju trenutke dostizanja waypoint-a u referentnoj vožnji "
+        f"$g={REFERENCE_VALIDATION_GATE:g}$; osenčeni delovi odgovaraju vremenskim prozorima iz tabele.}}",
         "\\end{figure}",
         "",
-        _gate_table(run_g2, run_b, run_g4),
-        "",
-        _gate_discussion(run_g2, run_b, run_g4),
+        "\\FloatBarrier",
     ]
 
     if not has_gate_runs:
         lines.append(
             "\\textbf{Napomena:} Za potpuno poređenje praga validacije potrebno je snimiti i bagove "
-            "za $g=2$ i $g=4$."
+            f"za $g={LOW_VALIDATION_GATE:g}$ i $g={HIGH_VALIDATION_GATE:g}$."
         )
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -1050,7 +1300,10 @@ def _trajectory_discussion(
 def _summary_table(summary: dict) -> str:
     rows = []
     for run in summary.get("runs", []):
-        if run["config_key"] == "b" and abs(float(run["validation_gate"]) - 3.0) > 1e-6:
+        if (
+            run["config_key"] == "b"
+            and abs(float(run["validation_gate"]) - REFERENCE_VALIDATION_GATE) > 1e-6
+        ):
             continue
         rows.append(
             f"{run['config_key']} & {run['validation_gate']:.1f} & "
@@ -1060,7 +1313,7 @@ def _summary_table(summary: dict) -> str:
         )
     return "\n".join(
         [
-            "\\begin{table}[h]",
+            "\\begin{table}[H]",
             "\\centering",
             "\\begin{tabular}{lrrrrr}",
             "\\hline",
@@ -1104,9 +1357,19 @@ def _covariance_discussion(run_b: dict | None) -> str:
         f"$P_{{\\theta\\theta}}={_fmt(run_b.get('ekf_cov_yaw_mean'), 4)}$. "
         "Na grafiku se vidi karakterističan obrazac: tokom predikcije kovarijansa raste, a pri "
         "uspešnim popravkama, označenim crvenim linijama, opada u komponentama koje opažene "
-        "linije mogu da ograniče. Odometrijska kovarijansa se poredi na istom grafiku, ali ona ne "
-        "koristi informaciju o zidovima i zato ne nosi isti efekat smanjenja nesigurnosti posle "
-        "lidarskih asocijacija."
+        "linije mogu da ograniče. Odometrijska kovarijansa je na istom grafiku skoro konstantna: "
+        f"u snimljenom /odom topiku njene srednje vrednosti su približno "
+        f"$\\Sigma^{{odom}}_{{xx}}={_fmt(run_b.get('odom_cov_x_mean'), 6)}$, "
+        f"$\\Sigma^{{odom}}_{{yy}}={_fmt(run_b.get('odom_cov_y_mean'), 6)}$ i "
+        f"$\\Sigma^{{odom}}_{{\\theta\\theta}}={_fmt(run_b.get('odom_cov_yaw_mean'), 6)}$. "
+        "To nije posledica Kalmanovog filtra, već načina na koji Gazebo/TurtleBot odometrijski "
+        "izvor popunjava poruku: kovarijansa u /odom je deklarisana kao fiksna nominalna "
+        "nesigurnost izvora odometrije, pa se ne propagira iz ciklusa u ciklus i ne smanjuje "
+        "posle lidarskih korekcija. Zbog toga je treba čitati kao referentnu kovarijansu koju "
+        "objavljuje odometrijski senzor, a ne kao stvarnu evoluciju akumulirane greške. "
+        "Dinamička evolucija nesigurnosti u ovom zadatku nalazi se u /ekf\\_pose, jer se upravo "
+        "tu primenjuju predikcija $P^{-}=F_xPF_x^T+F_uQF_u^T$ i popravka kovarijanse nakon "
+        "asociranih linijskih merenja."
     )
 
 
@@ -1120,15 +1383,26 @@ def _control_discussion(run_b: dict | None) -> str:
         "Najveći zabeleženi priraštaji između dva odbirka bili su "
         f"\\SI{{{_fmt(run_b.get('cmd_linear_step_max'))}}}{{m/s}} za linearni i "
         f"\\SI{{{_fmt(run_b.get('cmd_angular_step_max'))}}}{{rad/s}} za ugaoni kanal. "
-        "Ovi brojevi su direktna posledica ograničenja brzina i rate limiting-a u regulatoru. "
-        "Kada EKF popravka diskontinualno promeni estimiranu pozu, regulator vidi skok greške, "
-        "ali se taj skok ne prenosi nekontrolisano na /cmd\\_vel."
+        "Uzorci neposredno posle uspešnih EKF popravki imaju najveći priraštaj približno "
+        f"\\SI{{{_fmt(run_b.get('cmd_linear_update_step_max'))}}}{{m/s}} u linearnom i "
+        f"\\SI{{{_fmt(run_b.get('cmd_angular_update_step_max'))}}}{{rad/s}} u ugaonom kanalu. "
+        "Ovo je direktna veza sa razmatranjem iz Zadatka 6: regulator je zadržao "
+        "$\\rho$-$\\alpha$-$\\beta$ strukturu iz Domaćeg 2, ali se povratna informacija u "
+        "konfiguraciji (b) više ne uzima sa glatke odometrije nego sa /ekf\\_pose. Kada korak "
+        "popravke diskontinualno promeni estimiranu pozu, u sledećem ciklusu regulatora "
+        "diskontinualno se menjaju $\\rho$, $\\alpha$ i $\\beta$, pa se na /cmd\\_vel vide "
+        "kratki pregibi oko crvenih linija. Ti pregibi nisu numerička greška, već očekivana "
+        "posledica zatvaranja petlje preko korigovane estimacije. Uticaj je ublažen upravo "
+        "mehanizmima predviđenim u Zadatku 6: zasićenjem brzina na granice TurtleBot3 Burger-a "
+        "i ograničavanjem priraštaja komande. Pošto je najveći ugaoni priraštaj jednak "
+        "\\SI{0.250}{rad/s}, vidi se da je rate limiter stvarno aktivan; bez njega bi ista EKF "
+        "korekcija mogla da proizvede oštriji skok upravljanja."
     )
 
 
-def _gate_table(run_g2: dict | None, run_b: dict | None, run_g4: dict | None) -> str:
+def _gate_table(run_g2: dict | None, run_b: dict | None, run_g10: dict | None) -> str:
     rows = []
-    for run in (run_g2, run_b, run_g4):
+    for run in (run_g2, run_b, run_g10):
         if not run:
             continue
         rows.append(
@@ -1139,7 +1413,7 @@ def _gate_table(run_g2: dict | None, run_b: dict | None, run_g4: dict | None) ->
         )
     return "\n".join(
         [
-            "\\begin{table}[h]",
+            "\\begin{table}[H]",
             "\\centering",
             "\\begin{tabular}{rrrrr}",
             "\\hline",
@@ -1154,24 +1428,86 @@ def _gate_table(run_g2: dict | None, run_b: dict | None, run_g4: dict | None) ->
     )
 
 
-def _gate_discussion(run_g2: dict | None, run_b: dict | None, run_g4: dict | None) -> str:
-    if not (run_g2 and run_b and run_g4):
+def _innovation_window_table(windows: Sequence[InnovationWindowSummary]) -> str:
+    if not windows:
+        return "Tabela po vremenskim prozorima biće popunjena nakon offline analize inovacija."
+
+    rows = [
+        (
+            f"{window.label} & {window.start_s:.1f}--{window.end_s:.1f} & "
+            f"{_fmt(window.observation_mean)} & {_fmt(window.association_mean)} & "
+            f"{_fmt(window.mean_mahalanobis)} & {_fmt(window.max_mahalanobis)} & "
+            f"{_fmt(window.mean_abs_alpha)} \\\\"
+        )
+        for window in windows
+    ]
+    return "\n".join(
+        [
+            "\\begin{table}[H]",
+            "\\centering",
+            "\\begin{tabular}{lrrrrrr}",
+            "\\hline",
+            "Deo misije & Vreme [s] & Detekt. & Asoc. & Sr. Mah. & Maks. Mah. & Sr. $|\\Delta\\alpha|$ \\\\",
+            "\\hline",
+            *rows,
+            "\\hline",
+            "\\end{tabular}",
+            "\\caption{Razdvajanje vidljivosti zidova od kvaliteta linijskih merenja za referentnu vožnju $g=5$.}",
+            "\\end{table}",
+        ]
+    )
+
+
+def _innovation_window_discussion(windows: Sequence[InnovationWindowSummary]) -> str:
+    if len(windows) < 3:
+        return ""
+
+    start, middle, end = windows[:3]
+    return (
+        "Tabela to potvrđuje numerički: početak i kraj imaju veći prosečan broj detekcija "
+        f"({_fmt(start.observation_mean)} i {_fmt(end.observation_mean)}), "
+        "dok srednji deo ima manji broj detekcija "
+        f"({_fmt(middle.observation_mean)}), ali veću srednju ugaonu inovaciju "
+        f"({_fmt(middle.mean_abs_alpha)}) nego početak ({_fmt(start.mean_abs_alpha)}) "
+        f"i kraj ({_fmt(end.mean_abs_alpha)}). "
+    )
+
+
+def _gate_discussion(
+    run_g2: dict | None,
+    run_b: dict | None,
+    run_g10: dict | None,
+    innovation_windows: Sequence[InnovationWindowSummary],
+) -> str:
+    if not (run_g2 and run_b and run_g10):
         return (
             "Za potpuno poređenje praga validacije potrebno je snimiti konfiguraciju (b) za "
-            "$g=2$, $g=3$ i $g=4$."
+            f"$g={LOW_VALIDATION_GATE:g}$, $g={REFERENCE_VALIDATION_GATE:g}$ i "
+            f"$g={HIGH_VALIDATION_GATE:g}$."
         )
     return (
-        "Za $g=2$ srednji broj asociranih odlika je "
-        f"{_fmt(run_g2.get('association_count_mean'))}, za $g=3$ je "
-        f"{_fmt(run_b.get('association_count_mean'))}, a za $g=4$ je "
-        f"{_fmt(run_g4.get('association_count_mean'))}. "
+        f"Za $g={LOW_VALIDATION_GATE:g}$ srednji broj asociranih odlika je "
+        f"{_fmt(run_g2.get('association_count_mean'))}, za "
+        f"$g={REFERENCE_VALIDATION_GATE:g}$ je "
+        f"{_fmt(run_b.get('association_count_mean'))}, a za "
+        f"$g={HIGH_VALIDATION_GATE:g}$ je "
+        f"{_fmt(run_g10.get('association_count_mean'))}. "
         "Manji prag zato odbacuje više opažanja i ima manji broj popravki, dok veći prag prihvata "
-        "skoro isti broj merenja kao podrazumevana vrednost, ali uz potencijalno veći rizik "
-        "pogrešne asocijacije. U ovim vožnjama sva tri praga daju sličnu grešku dostizanja "
-        "waypoint-a, što znači da mapa i opažanja linija nisu bili u ekstremno konfliktnom režimu. "
-        "Pretpostavka konstantne matrice $R$ je najslabija u delovima putanje gde su segmenti kratki, "
-        "delimično zaklonjeni ili posmatrani pod oštrim uglom; tada offline statistika inovacija "
-        "pokazuje povećane vrednosti $|\\Delta\\alpha|$, $|\\Delta r|$ i Mahalanobisove distance."
+        "više merenja i u ovom snimanju ima najveći broj popravki. Istovremeno, za najveći prag "
+        f"srednja greška dostizanja raste na \\SI{{{_fmt(run_g10.get('waypoint_position_error_mean_m'))}}}{{m}}, "
+        "što pokazuje cenu preširokog prihvatanja merenja: u korekciju lakše ulaze i slabije ili "
+        "pogrešno uparene linije. "
+        "Crne vertikalne linije na graficima označavaju trenutke u kojima se indeks waypoint-a "
+        f"poveća u referentnoj vožnji za $g={REFERENCE_VALIDATION_GATE:g}$. "
+        "Plavi osenčeni delovi označavaju početak i kraj misije, gde robot iz otvorenijeg položaja "
+        "vidi više zidova i uglova; zato je broj detektovanih i asociranih linija prirodno veći. "
+        "To povećanje ne treba tumačiti kao problem matrice $R$, nego kao promenu vidljivosti mape. "
+        "Narandžasto osenčeni deo označava sredinu misije, gde ima manje vidljivih linija, ali su "
+        "one češće kratke, delimično zaklonjene ili posmatrane pod oštrim uglom. "
+        "Upravo se tu slabost pretpostavke konstantne matrice $R$ bolje vidi: ne kroz sam broj "
+        "detekcija, već kroz veće skokove Mahalanobisove distance i $|\\Delta\\alpha|$ u offline "
+        "statistici inovacija. "
+        + _innovation_window_discussion(innovation_windows)
     )
 
 
@@ -1183,12 +1519,15 @@ def _waypoint_table(errors: Sequence[WaypointError]) -> str:
         error
         for error in errors
         if error.config_key in ("a", "b", "c")
-        and (error.config_key != "b" or abs(error.validation_gate - 3.0) < 1e-6)
+        and (
+            error.config_key != "b"
+            or abs(error.validation_gate - REFERENCE_VALIDATION_GATE) < 1e-6
+        )
     ]
     if not selected:
         selected = list(errors)
     lines = [
-        "\\begin{table}[h]",
+        "\\begin{table}[H]",
         "\\centering",
         "\\begin{tabular}{lrrr}",
         "\\hline",
@@ -1231,6 +1570,7 @@ def analyze(args: argparse.Namespace) -> int:
         if corrected_run
         else []
     )
+    innovation_windows = summarize_innovation_windows(corrected_run, innovation_stats)
 
     plot_trajectories(figures_dir / "assignment7_trajectories.png", primary_runs, waypoints)
     plot_waypoint_errors(figures_dir / "assignment7_waypoint_errors.png", waypoint_errors)
@@ -1287,6 +1627,21 @@ def analyze(args: argparse.Namespace) -> int:
             "mean_abs_radius",
         ],
     )
+    write_csv(
+        tables_dir / "innovation_windows.csv",
+        innovation_windows,
+        [
+            "label",
+            "start_s",
+            "end_s",
+            "observation_mean",
+            "association_mean",
+            "mean_mahalanobis",
+            "max_mahalanobis",
+            "mean_abs_alpha",
+            "mean_abs_radius",
+        ],
+    )
     write_gate_csv(tables_dir / "gate_associations.csv", gate_runs)
 
     summary = summarize_runs(runs, waypoint_errors, estimation_errors)
@@ -1298,7 +1653,8 @@ def analyze(args: argparse.Namespace) -> int:
         output_dir / "assignment7_results.tex",
         summary,
         waypoint_errors,
-        len(gate_runs) >= 2,
+        innovation_windows,
+        len(gate_runs) >= len(GATE_ANALYSIS_VALUES),
     )
 
     print(f"Assignment 7 analysis written to {output_dir}")

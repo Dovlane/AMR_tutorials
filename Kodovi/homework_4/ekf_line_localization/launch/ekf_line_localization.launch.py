@@ -21,7 +21,7 @@ def generate_launch_description():
             DeclareLaunchArgument("use_sim_time", default_value="true"),
             DeclareLaunchArgument("map_file", default_value=default_map_file),
             DeclareLaunchArgument("enable_correction", default_value="true"),
-            DeclareLaunchArgument("validation_gate", default_value="3.0"),
+            DeclareLaunchArgument("validation_gate", default_value="5.0"),
             DeclareLaunchArgument("pose_topic", default_value="/ekf_pose"),
             DeclareLaunchArgument("map_marker_length", default_value="1.6"),
             Node(

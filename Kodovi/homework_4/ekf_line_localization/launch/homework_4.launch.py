@@ -23,7 +23,7 @@ def generate_launch_description():
             DeclareLaunchArgument("map_file", default_value=default_map_file),
             DeclareLaunchArgument("waypoint_file", default_value=default_waypoint_file),
             DeclareLaunchArgument("enable_correction", default_value="true"),
-            DeclareLaunchArgument("validation_gate", default_value="3.0"),
+            DeclareLaunchArgument("validation_gate", default_value="5.0"),
             DeclareLaunchArgument("map_marker_length", default_value="1.6"),
             DeclareLaunchArgument("feedback_topic", default_value="/ekf_pose"),
             DeclareLaunchArgument("feedback_type", default_value="pose"),

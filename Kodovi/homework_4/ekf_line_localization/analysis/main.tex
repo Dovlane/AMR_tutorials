@@ -72,21 +72,29 @@ Gazebo poza iz topika \texttt{/gazebo/model\_states} koristi se kao ground truth
 
 \section{Postavka eksperimenta}
 
-Waypoint misija je definisana u fajlu \texttt{config/waypoints.yaml}. Sve konfiguracije koriste iste referentne poze u frejmu \texttt{map}. U konfiguraciji (a) regulator dobija povratnu informaciju sa \texttt{/odom}; u konfiguracijama (b) i (c) dobija povratnu informaciju sa \texttt{/ekf\_pose}. U konfiguraciji (c) parametar \texttt{enable\_correction} je isključen, pa se EKF estimacija svodi na modelsku predikciju iz inkremenata točkova.
+Waypoint misija je definisana u fajlu \texttt{config/waypoints.yaml}. Putanja je izabrana tako da robot prolazi blizu uglova i menja pravac gledanja zidova, jer su tada line-fit segmenti kraći, delimično zaklonjeni i češće posmatrani pod oštrim uglom. Sve konfiguracije koriste iste referentne poze u frejmu \texttt{map}. U konfiguraciji (a) regulator dobija povratnu informaciju sa \texttt{/odom}; u konfiguracijama (b) i (c) dobija povratnu informaciju sa \texttt{/ekf\_pose}. U konfiguraciji (c) parametar \texttt{enable\_correction} je isključen, pa se EKF estimacija svodi na modelsku predikciju iz inkremenata točkova.
 
-Za analizu praga validacije ponavlja se konfiguracija (b) za više vrednosti praga $g$. Podrazumevana vrednost je $g=3$, a za poređenje se koriste dodatne vrednosti $g=2$ i $g=4$.
+Za analizu praga validacije ponavlja se konfiguracija (b) za više vrednosti praga $g$. Referentna vrednost je $g=5$, a za poređenje se koriste dodatne vrednosti $g=2$ i $g=10$.
 
-\section{Automatska obrada podataka}
+\section{Analiza regulatora iz Zadatka 6}
 
-Snimanje i analiza su automatizovani skriptama:
-\small
-\begin{verbatim}
-./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_all.sh
-./Kodovi/homework_4/ekf_line_localization/scripts/analyze_assignment7_bags.sh
-\end{verbatim}
-\normalsize
+Regulator za waypoint misiju implementiran je u fajlu \path{ekf_line_localization/waypoint_controller.py}. Struktura je namerno zadržana iz Domaćeg 2: funkcije \path{compute_polar_errors} i \path{compute_rho_alpha_beta_control} importuju se iz paketa \path{homework_2_control}. Zbog toga se komanda i dalje računa preko promenljivih $\rho$, $\alpha$ i $\beta$. Razlika je u tome što čvor više ne mora da koristi samo \texttt{/odom}: parametri \texttt{feedback\_topic} i \texttt{feedback\_type} omogućavaju da se ista upravljačka petlja zatvori ili preko odometrije ili preko \texttt{/ekf\_pose}. U konfiguraciji (b) zadatka 7 koristi se \texttt{/ekf\_pose}, tj. poza u frejmu \texttt{map} koju objavljuje EKF lokalizacioni čvor.
 
-Prva skripta pokreće svih pet potrebnih misija: konfiguracije (a), (b), (c), zatim konfiguraciju (b) za $g=2$ i $g=4$. Druga skripta čita već snimljene bagove, računa metrike, crta grafike i generiše LaTeX fragment \texttt{analysis/results/assignment7\_results.tex}.
+Upravljanje se objavljuje na \texttt{/cmd\_vel}, a sekvencijalno prelaženje kroz referentne poze prati se preko \texttt{/waypoint\_index}. Kada je trenutni waypoint unutar zadate pozicione i ugaone tolerancije, regulator prelazi na sledeći cilj. Time se direktno ispunjava zahtev Zadatka 6 da robot autonomno prođe kroz listu referentnih poza.
+
+Važna razlika u odnosu na Domaći 2 je priroda povratne informacije. Odometrija se menja glatko, dok \texttt{/ekf\_pose} može da napravi skok kada EKF prihvati lidarsko merenje i izvrši popravku. Takav skok trenutno menja greške $\rho$, $\alpha$ i $\beta$, pa bi bez zaštite mogao da proizvede nagli skok u \texttt{/cmd\_vel}. Zbog toga regulator, pored zasićenja brzina TurtleBot3 Burger-a, koristi i ograničenje priraštaja komande u funkciji \texttt{limit\_twist}. Eksperimentalna analiza u narednom odeljku zato ne posmatra samo trajektoriju, već i da li se ti diskontinuiteti vide u upravljačkom signalu i da li su dovoljno ublaženi.
+
+%\section{Automatska obrada podataka}
+%
+%Snimanje i analiza su automatizovani skriptama:
+%\small
+%\begin{verbatim}
+%./Kodovi/homework_4/ekf_line_localization/scripts/run_assignment7_all.sh
+%./Kodovi/homework_4/ekf_line_localization/scripts/analyze_assignment7_bags.sh
+%\end{verbatim}
+%\normalsize
+%
+%Prva skripta pokreće svih pet potrebnih misija: konfiguracije (a), (b), (c), zatim konfiguraciju (b) za $g=2$ i $g=10$. Referentna konfiguracija (b) koristi $g=5$. Druga skripta čita već snimljene bagove, računa metrike, crta grafike i generiše LaTeX fragment \texttt{analysis/results/assignment7\_results.tex}.
 
 \IfFileExists{results/assignment7_results.tex}{
     \input{results/assignment7_results.tex}
@@ -99,10 +107,5 @@ Prva skripta pokreće svih pet potrebnih misija: konfiguracije (a), (b), (c), za
 }
 
 \FloatBarrier
-
-\begin{thebibliography}{9}
-\bibitem{domaci4}
-Materijal zadatka: \textit{Domaći 4 -- Prošireni Kalmanov filtar zasnovan na linijama za popravku lokalizacije mobilnog robota i zatvaranje upravljačke petlje}.
-\end{thebibliography}
 
 \end{document}

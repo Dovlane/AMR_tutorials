@@ -10,7 +10,7 @@ WAYPOINT_FILE="${WAYPOINT_FILE:-$PACKAGE_DIR/config/waypoints.yaml}"
 FEEDBACK_TOPIC="${FEEDBACK_TOPIC:-/ekf_pose}"
 FEEDBACK_TYPE="${FEEDBACK_TYPE:-pose}"
 ENABLE_CORRECTION="${ENABLE_CORRECTION:-true}"
-VALIDATION_GATE="${VALIDATION_GATE:-3.0}"
+VALIDATION_GATE="${VALIDATION_GATE:-5.0}"
 MISSION_TIMEOUT="${MISSION_TIMEOUT:-240}"
 START_RVIZ="${START_RVIZ:-1}"
 PIDS=()
@@ -35,7 +35,7 @@ Environment:
   FEEDBACK_TOPIC=topic  Controller feedback topic. Default: /ekf_pose.
   FEEDBACK_TYPE=pose    Use "pose" for /ekf_pose or "odom" for /odom.
   ENABLE_CORRECTION=0   Disable EKF correction. Default: true.
-  VALIDATION_GATE=val   EKF association gate. Default: 3.0.
+  VALIDATION_GATE=val   EKF association gate. Default: 5.0.
   LOG_DIR=path          Directory for logs from "all" mode.
 EOF
 }

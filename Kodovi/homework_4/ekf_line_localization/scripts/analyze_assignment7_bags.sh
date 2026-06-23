@@ -22,10 +22,10 @@ Environment:
 
 The script looks for the newest bags for:
   (a) odom feedback
-  (b) EKF corrected, g=3
+  (b) EKF corrected, g=5
   (c) EKF prediction-only
   (b) EKF corrected, g=2
-  (b) EKF corrected, g=4
+  (b) EKF corrected, g=10
 EOF
 }
 
@@ -81,15 +81,15 @@ main() {
 
   source_ros
 
-  local bag_a bag_b bag_c bag_g2 bag_g4
+  local bag_a bag_b bag_c bag_g2 bag_g10
   bag_a="$(latest_matching_bag "configuration (a)" "hw4_a_odom_feedback_gate_*" "hw4_a*")"
-  bag_b="$(latest_matching_bag "configuration (b), g=3" "hw4_b_ekf_corrected_gate_3p0_*" "hw4_b_ekf_corrected_gate_3_*" "hw4_b_gate_3*")"
+  bag_b="$(latest_matching_bag "configuration (b), g=5" "hw4_b_ekf_corrected_gate_5p0_*" "hw4_b_ekf_corrected_gate_5_*" "hw4_b_gate_5*")"
   bag_c="$(latest_matching_bag "configuration (c)" "hw4_c_ekf_prediction_only_gate_*" "hw4_c*")"
   bag_g2="$(latest_matching_bag "configuration (b), g=2" "hw4_b_ekf_corrected_gate_2p0_*" "hw4_b_ekf_corrected_gate_2_*" "hw4_b_gate_2*")"
-  bag_g4="$(latest_matching_bag "configuration (b), g=4" "hw4_b_ekf_corrected_gate_4p0_*" "hw4_b_ekf_corrected_gate_4_*" "hw4_b_gate_4*")"
+  bag_g10="$(latest_matching_bag "configuration (b), g=10" "hw4_b_ekf_corrected_gate_10p0_*" "hw4_b_ekf_corrected_gate_10_*" "hw4_b_gate_10*")"
 
   python3 "$PACKAGE_DIR/analysis/assignment7_analysis.py" \
-    --bags "$bag_a" "$bag_b" "$bag_c" "$bag_g2" "$bag_g4" \
+    --bags "$bag_a" "$bag_b" "$bag_c" "$bag_g2" "$bag_g10" \
     --output-dir "$OUTPUT_DIR" \
     --waypoint-file "$WAYPOINT_FILE" \
     --map-file "$MAP_FILE"

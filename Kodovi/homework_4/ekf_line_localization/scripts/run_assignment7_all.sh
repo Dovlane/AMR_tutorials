@@ -15,6 +15,6 @@ export ANALYZE_AFTER_RUN=0
 "$SCRIPT_DIR/run_assignment7_config.sh" b
 "$SCRIPT_DIR/run_assignment7_config.sh" c
 VALIDATION_GATE=2.0 "$SCRIPT_DIR/run_assignment7_config.sh" b
-VALIDATION_GATE=4.0 "$SCRIPT_DIR/run_assignment7_config.sh" b
+VALIDATION_GATE=10.0 "$SCRIPT_DIR/run_assignment7_config.sh" b
 
 "$SCRIPT_DIR/analyze_assignment7_bags.sh"

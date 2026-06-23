@@ -11,7 +11,7 @@ MISSION_TIMEOUT="${MISSION_TIMEOUT:-240}"
 START_RVIZ="${START_RVIZ:-0}"
 BAG_START_DELAY="${BAG_START_DELAY:-5.0}"
 RECORD_BAG="${RECORD_BAG:-1}"
-VALIDATION_GATE="${VALIDATION_GATE:-3.0}"
+VALIDATION_GATE="${VALIDATION_GATE:-5.0}"
 BAG_TOPICS="${BAG_TOPICS:-/clock /joint_states /odom /ekf_pose /cmd_vel /scan /tf /tf_static /gazebo/model_states /ekf_association_count /ekf_update_applied /waypoint_index /ekf_map_lines}"
 ANALYZE_AFTER_RUN="${ANALYZE_AFTER_RUN:-0}"
 ANALYSIS_OUTPUT_DIR="${ANALYSIS_OUTPUT_DIR:-$PACKAGE_DIR/analysis/results}"
@@ -37,7 +37,7 @@ Environment:
   BAG_TOPICS="..."      Override recorded topics.
   BAG_START_DELAY=sec   Controller delay used to let bag recording start. Default: 5.0.
   MISSION_TIMEOUT=sec   Maximum time to wait for all waypoints. Default: 240.
-  VALIDATION_GATE=val   EKF association gate. Default: 3.0.
+  VALIDATION_GATE=val   EKF association gate. Default: 5.0.
   WAYPOINT_FILE=path    Waypoint YAML to run. Default: config/waypoints.yaml.
   ANALYZE_AFTER_RUN=1   Generate analysis outputs for this bag after the mission.
   ANALYSIS_OUTPUT_DIR=path  Analysis output directory. Default: analysis/results.
